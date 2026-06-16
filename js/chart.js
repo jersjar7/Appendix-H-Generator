@@ -6,7 +6,9 @@ export const DEFAULTS = {
   earthColor: "#ece0cf",
   waterColor: "#bcd6ef",
   structureColor: "#000000",
-  gridColor: "#e6e6e6",
+  gridColor: "#dcdcdc",
+  minorGridColor: "#efefef",
+  minorDivisions: 5,
   axisColor: "#bdbdbd",
   tickColor: "#666666",
   showEarthFill: true,
@@ -58,6 +60,21 @@ function ticks(lo, hi, max = 7) {
   return out;
 }
 
+// Positions between major ticks, used for faint minor gridlines.
+function minorPositions(major, lo, hi, div) {
+  if (!major || major.length < 2 || div < 2) return [];
+  const step = (major[1] - major[0]) / div;
+  if (!(step > 0)) return [];
+  const out = [];
+  const start = Math.floor(lo / step) * step;
+  for (let v = start; v <= hi + step * 0.5; v += step) {
+    if (v < lo || v > hi) continue;
+    if (major.some((m) => Math.abs(m - v) < step * 0.25)) continue; // skip majors
+    out.push(v);
+  }
+  return out;
+}
+
 export function renderChart(ctx, W, H, section, optsIn = {}) {
   const o = { ...DEFAULTS, ...optsIn };
   ctx.save();
@@ -99,6 +116,11 @@ export function renderChart(ctx, W, H, section, optsIn = {}) {
   ctx.font = `${fontPx}px Arial, sans-serif`;
   ctx.textBaseline = "middle";
   const yt = ticks(ymin, ymax), xt = ticks(xmin, xmax);
+  // minor gridlines first (lighter), then major over them — finer to read off,
+  // without adding more axis numbers.
+  ctx.strokeStyle = o.minorGridColor;
+  for (const y of minorPositions(yt, ymin, ymax, o.minorDivisions)) { const py = sy(y); line(ctx, pL, py, pL + pW, py); }
+  for (const x of minorPositions(xt, xmin, xmax, o.minorDivisions)) { const px = sx(x); line(ctx, px, pT, px, pT + pH); }
   ctx.strokeStyle = o.gridColor;
   for (const y of yt) { const py = sy(y); line(ctx, pL, py, pL + pW, py); }
   for (const x of xt) { const px = sx(x); line(ctx, px, pT, px, pT + pH); }
