@@ -2,6 +2,7 @@ import { parseProfile, parseSummary, formatStation } from "./parse.js";
 import { buildSections } from "./model.js";
 import { renderChart } from "./chart.js";
 import { buildDocx } from "./docx.js";
+import { isAvailable as historyAvailable, listRuns, saveRun, deleteRun, clearRuns } from "./history.js";
 
 const $ = (id) => document.getElementById(id);
 const CANVAS_W = 1300, CANVAS_H = 772;
@@ -98,6 +99,22 @@ function generate() {
   setMessages(msgs);
   renderResults(conditionLabel);
   $("download").disabled = state.sections.length === 0;
+
+  // save this run to local history
+  saveRun({
+    condition: conditionLabel,
+    events,
+    summary: $("summary").value,
+    profile: $("profile").value,
+    options: {
+      optEarth: $("optEarth").checked,
+      optWater: $("optWater").checked,
+      optThalweg: $("optThalweg").checked,
+      optLegend: $("optLegend").checked,
+    },
+    count: result.sections.length,
+  });
+  renderHistory();
 }
 
 function chartOptions() {
@@ -259,9 +276,68 @@ function restart() {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
+// ---------- history ----------
+function fmtDate(ts) {
+  const d = new Date(ts);
+  return d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+}
+
+function renderHistory() {
+  const panel = $("historyPanel");
+  if (!historyAvailable()) { panel.style.display = "none"; return; }
+  const runs = listRuns();
+  $("historyCount").textContent = runs.length ? `(${runs.length})` : "";
+  const list = $("historyList");
+  list.innerHTML = "";
+  if (!runs.length) {
+    const li = document.createElement("li");
+    li.className = "history-empty";
+    li.textContent = "No saved runs yet — generate charts and they'll appear here.";
+    list.appendChild(li);
+    return;
+  }
+  for (const run of runs) {
+    const li = document.createElement("li");
+    const events = (run.events || []).join(", ");
+    li.innerHTML = `
+      <div class="hmeta">
+        <div class="htitle">${escapeAttr(run.condition || "Run")} · ${run.count || "?"} XS</div>
+        <div class="hsub">${escapeAttr(events)} — ${fmtDate(run.savedAt)}</div>
+      </div>
+      <button class="mini load">Load</button>
+      <button class="mini del">Delete</button>`;
+    li.querySelector(".load").addEventListener("click", () => loadRun(run));
+    li.querySelector(".del").addEventListener("click", () => {
+      if (window.confirm("Delete this saved run?")) { deleteRun(run.id); renderHistory(); }
+    });
+    list.appendChild(li);
+  }
+}
+
+function loadRun(run) {
+  const dirty = $("summary").value.trim() || $("profile").value.trim() || state.sections.length;
+  if (dirty && !window.confirm("Load this run? It will replace your current inputs.")) return;
+  $("condition").value = run.condition || "";
+  renderEventList(run.events && run.events.length ? run.events : PRESETS.existing);
+  $("summary").value = run.summary || "";
+  $("profile").value = run.profile || "";
+  const o = run.options || {};
+  $("optEarth").checked = o.optEarth !== false;
+  $("optWater").checked = o.optWater !== false;
+  $("optThalweg").checked = o.optThalweg !== false;
+  $("optLegend").checked = o.optLegend !== false;
+  updateAutoCount();
+  generate();
+  $("historyPanel").open = false;
+}
+
 // ---------- init ----------
 renderEventList(PRESETS.existing);
+renderHistory();
 $("restart").addEventListener("click", restart);
+$("clearHistory").addEventListener("click", () => {
+  if (listRuns().length && window.confirm("Clear all saved runs on this device?")) { clearRuns(); renderHistory(); }
+});
 $("addEvent").addEventListener("click", () => renderEventList([...eventRows(), ""]));
 document.querySelectorAll("[data-preset]").forEach((b) =>
   b.addEventListener("click", () => {
