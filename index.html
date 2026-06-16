@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Appendix H Generator — Cross-Section Charts</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header>
+    <h1>Appendix H Generator</h1>
+    <p class="sub">Paste your SMS values, get clean cross-section charts and a Word document — all in your browser. Nothing is uploaded.</p>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2><span class="step">1</span> Condition &amp; flow events</h2>
+      <div class="row">
+        <label>Condition label (used in captions)
+          <input id="condition" type="text" value="Existing Conditions" />
+        </label>
+        <div class="presets">
+          <span>Presets:</span>
+          <button class="ghost" data-preset="existing">Existing (2/100/500)</button>
+          <button class="ghost" data-preset="proposed">Proposed (+2080)</button>
+        </div>
+      </div>
+      <p class="hint">List the flow events <strong>in increasing order of discharge</strong> — exactly the surfaces you exported (Ground is automatic). Add or remove as many as you need.</p>
+      <ul id="eventList" class="events"></ul>
+      <button id="addEvent" class="ghost small">+ Add event</button>
+      <p id="autoCount" class="auto"></p>
+    </section>
+
+    <section class="card">
+      <h2><span class="step">2</span> Paste the SMS Summary Table</h2>
+      <p class="hint">From the 1D FHD reporting coverage → Summary Table → <em>Copy to clipboard</em>. Gives stations + thalweg (Z Min) for exact matching. Optional but recommended.</p>
+      <textarea id="summary" rows="5" placeholder="Reach	Station	Min&#10;Hood Canal	1047.09	54.78&#10;Hood Canal	1065.36	55.68"></textarea>
+    </section>
+
+    <section class="card">
+      <h2><span class="step">3</span> Paste the SMS profile values</h2>
+      <p class="hint">Plot Wizard → Observation Profile → right-click → View Values → Ctrl+A, Ctrl+C, then paste here.</p>
+      <textarea id="profile" rows="8" placeholder="Distance	Value	Distance	Value ...&#10;1	0.0	74.60	10.87	67.78 ..."></textarea>
+    </section>
+
+    <section class="card">
+      <h2><span class="step">4</span> Options</h2>
+      <div class="opts">
+        <label>Station rounding
+          <select id="rounding">
+            <option value="nearest">Nearest foot</option>
+            <option value="up">Round up</option>
+            <option value="down">Round down</option>
+          </select>
+        </label>
+        <label class="chk"><input type="checkbox" id="optEarth" checked /> Earth fill</label>
+        <label class="chk"><input type="checkbox" id="optWater" checked /> Inundation shading</label>
+        <label class="chk"><input type="checkbox" id="optThalweg" checked /> Thalweg marker</label>
+        <label class="chk"><input type="checkbox" id="optLegend" checked /> Smart legend placement</label>
+      </div>
+      <button id="generate" class="primary">Generate charts</button>
+      <button id="download" class="primary alt" disabled>Download Word document</button>
+    </section>
+
+    <div id="messages"></div>
+    <div id="results"></div>
+  </main>
+
+  <footer>
+    <p>Cross-section charts for hydraulic appendices · runs entirely client-side</p>
+  </footer>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
