@@ -19,10 +19,10 @@
 
   <main>
     <details id="historyPanel" class="card history-card">
-      <summary><strong>Previous runs</strong> <span id="historyCount" class="hcount"></span></summary>
-      <p class="hint">Saved on this device only (no account needed). Load one to refill the inputs.</p>
+      <summary><strong>Saved inputs</strong> <span id="historyCount" class="hcount"></span></summary>
+      <p class="hint">Stores the values you pasted in steps 2 &amp; 3 (plus condition &amp; events) on this device — not the charts. Load one to refill the inputs.</p>
       <ul id="historyList" class="history-list"></ul>
-      <button id="clearHistory" class="ghost small">Clear all history</button>
+      <button id="clearHistory" class="ghost small">Clear all saved inputs</button>
     </details>
 
     <section class="card">
@@ -80,6 +80,7 @@
         <label class="chk"><input type="checkbox" id="optLegend" checked /> Smart legend placement</label>
       </div>
       <button id="generate" class="primary">Generate charts</button>
+      <button id="saveInputs" class="ghost">Save inputs</button>
       <button id="download" class="primary alt" disabled>Download Word document</button>
     </section>
 
