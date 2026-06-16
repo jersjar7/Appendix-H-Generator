@@ -241,8 +241,27 @@ function updateAutoCount() {
   } else el.textContent = "";
 }
 
+// ---------- restart ----------
+function restart() {
+  const hasData =
+    $("summary").value.trim() || $("profile").value.trim() || state.sections.length;
+  if (hasData && !window.confirm("Clear all inputs and start over?")) return;
+  $("condition").value = "Existing Conditions";
+  renderEventList(PRESETS.existing);
+  $("summary").value = "";
+  $("profile").value = "";
+  ["optEarth", "optWater", "optThalweg", "optLegend"].forEach((id) => ($(id).checked = true));
+  state = { sections: [], canvases: [], order: "asc" };
+  $("results").innerHTML = "";
+  $("messages").innerHTML = "";
+  $("autoCount").textContent = "";
+  $("download").disabled = true;
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
 // ---------- init ----------
 renderEventList(PRESETS.existing);
+$("restart").addEventListener("click", restart);
 $("addEvent").addEventListener("click", () => renderEventList([...eventRows(), ""]));
 document.querySelectorAll("[data-preset]").forEach((b) =>
   b.addEventListener("click", () => {
