@@ -146,26 +146,64 @@ function renderResults(conditionLabel) {
   wrap.innerHTML = "";
   state.canvases = [];
 
-  // order toolbar
+  // nav: order toggle + station chips
+  const nav = document.createElement("div");
+  nav.className = "results-nav";
   if (state.sections.length > 1) {
     const bar = document.createElement("div");
     bar.className = "order-bar";
     bar.innerHTML = `<span>Ordered by station — <strong>${state.order === "asc" ? "ascending" : "descending"}</strong></span>
       <button id="orderToggle" class="ghost small">Switch to ${state.order === "asc" ? "descending" : "ascending"}</button>`;
-    wrap.appendChild(bar);
+    nav.appendChild(bar);
     bar.querySelector("#orderToggle").addEventListener("click", () => {
       state.order = state.order === "asc" ? "desc" : "asc";
       renderResults(conditionLabel);
     });
   }
+  const chips = document.createElement("div");
+  chips.className = "station-nav";
+  nav.appendChild(chips);
+  wrap.appendChild(nav);
+
+  // horizontal slider of charts
+  const strip = document.createElement("div");
+  strip.className = "chart-strip";
+  wrap.appendChild(strip);
+
+  const chipFor = new Map();
+  const setActiveChip = (card) => {
+    chips.querySelectorAll(".chip").forEach((c) => c.classList.remove("active"));
+    const chip = chipFor.get(card);
+    if (chip) chip.classList.add("active");
+  };
+  // highlight the chip whose chart is centered as you scroll
+  const observer = new IntersectionObserver(
+    (entries) => {
+      let best = null;
+      for (const e of entries) if (e.isIntersecting && (!best || e.intersectionRatio > best.intersectionRatio)) best = e;
+      if (best && best.intersectionRatio > 0.5) setActiveChip(best.target);
+    },
+    { root: strip, threshold: [0.25, 0.5, 0.75, 1] }
+  );
 
   const sel = (v, x) => (String(v) === String(x) ? " selected" : "");
-  orderedSections().forEach((sec) => {
+  orderedSections().forEach((sec, i) => {
     const card = document.createElement("div");
     card.className = "chart-card";
     const canvas = document.createElement("canvas");
     canvas.width = CANVAS_W; canvas.height = CANVAS_H;
     card.appendChild(canvas);
+
+    // station chip that scrolls the slider to this chart
+    const chip = document.createElement("button");
+    chip.className = "chip";
+    chip.textContent = sec.stationLabel || `#${i + 1}`;
+    chip.addEventListener("click", () => {
+      card.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+      setActiveChip(card);
+    });
+    chips.appendChild(chip);
+    chipFor.set(card, chip);
 
     const st = sec.structure;
     const tools = document.createElement("div");
@@ -190,7 +228,8 @@ function renderResults(conditionLabel) {
     const cap = document.createElement("div");
     cap.className = "caption-preview";
     card.appendChild(cap);
-    wrap.appendChild(card);
+    strip.appendChild(card);
+    observer.observe(card);
 
     const ctx = canvas.getContext("2d");
     const cond = $("condition").value.trim();
@@ -202,7 +241,11 @@ function renderResults(conditionLabel) {
     state.canvases.push({ canvas, sec, redraw: draw });
 
     // wiring
-    tools.querySelector(".station").addEventListener("input", (e) => { sec.stationLabel = e.target.value; cap.textContent = `${cond ? cond + ", " : ""}Cross Section at Station ${sec.stationLabel || "?"}`; });
+    tools.querySelector(".station").addEventListener("input", (e) => {
+      sec.stationLabel = e.target.value;
+      chip.textContent = sec.stationLabel || `#${i + 1}`;
+      cap.textContent = `${cond ? cond + ", " : ""}Cross Section at Station ${sec.stationLabel || "?"}`;
+    });
     const yminEl = tools.querySelector(".ymin"), ymaxEl = tools.querySelector(".ymax");
     const applyY = () => {
       const a = parseFloat(yminEl.value), b = parseFloat(ymaxEl.value);
@@ -223,6 +266,9 @@ function renderResults(conditionLabel) {
     };
     [stype, sxEl, stopEl].forEach((el) => el.addEventListener("change", applyStruct));
   });
+
+  const firstChip = chips.querySelector(".chip");
+  if (firstChip) firstChip.classList.add("active");
 }
 
 // redraw all when global options change
