@@ -33,13 +33,29 @@
 
     <section class="card">
       <h2><span class="step">2</span> Paste the SMS Summary Table</h2>
-      <p class="hint">From the 1D FHD reporting coverage → Summary Table → <em>Copy to clipboard</em>. Gives stations + thalweg (Z Min) for exact matching. Optional but recommended.</p>
+      <p class="hint">In SMS, get the stations + thalweg (Z&nbsp;Min) used to match each cross section:</p>
+      <ol class="hint-list">
+        <li>Right-click the <strong>1D FHD reporting coverage</strong> → <strong>Summary Table</strong>.</li>
+        <li>Click <strong>Generate Table</strong>.</li>
+        <li>Click <strong>Copy to Clipboard</strong>, then paste below.</li>
+      </ol>
       <textarea id="summary" rows="5" placeholder="Reach	Station	Min&#10;Hood Canal	1047.09	54.78&#10;Hood Canal	1065.36	55.68"></textarea>
     </section>
 
     <section class="card">
       <h2><span class="step">3</span> Paste the SMS profile values</h2>
-      <p class="hint">Plot Wizard → Observation Profile → right-click → View Values → Ctrl+A, Ctrl+C, then paste here.</p>
+      <p class="hint">In SMS, extract the cross-section profiles:</p>
+      <ol class="hint-list">
+        <li>Activate the <strong>observation cross-sections coverage</strong> (Existing or Proposed).</li>
+        <li>Top menu <strong>Display → Plot Wizard</strong>.</li>
+        <li>Choose plot type <strong>Observation Profile</strong>, then <strong>Next</strong>.</li>
+        <li>Confirm the coverage is the observation cross-sections, and that <strong>all arcs are selected / active</strong>.</li>
+        <li>Under <strong>Data sets</strong>, switch from <em>Active</em> to <strong>Specified</strong>, pick the <strong>mesh</strong>, then check the <strong>terrain Z (ground)</strong> plus each flood <strong>water-surface elevation</strong> you need (2-year, 100-year, 500-year, …).</li>
+        <li>Under <strong>Time steps</strong>, choose <strong>Specified</strong> and check <strong>only the last time step</strong> of the simulation.</li>
+        <li>Click <strong>Finish</strong> — the profile plot appears.</li>
+        <li>Right-click the plot → <strong>View Values</strong> → <strong>Ctrl+A</strong>, <strong>Ctrl+C</strong>.</li>
+        <li>Paste below.</li>
+      </ol>
       <textarea id="profile" rows="8" placeholder="Distance	Value	Distance	Value ...&#10;1	0.0	74.60	10.87	67.78 ..."></textarea>
     </section>
 

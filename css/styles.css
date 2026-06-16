@@ -44,6 +44,9 @@ main { max-width: 1100px; margin: 22px auto; padding: 0 16px; }
 }
 .hint { color: var(--muted); font-size: 0.88rem; margin: 4px 0 12px; }
 .auto { color: var(--green); font-size: 0.85rem; font-weight: 600; min-height: 1em; }
+.hint-list { color: var(--muted); font-size: 0.86rem; margin: 4px 0 12px; padding-left: 22px; }
+.hint-list li { margin-bottom: 4px; }
+.hint-list strong { color: var(--ink); font-weight: 600; }
 label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 6px; }
 input[type="text"], textarea, select {
   width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px;
