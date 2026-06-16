@@ -105,13 +105,13 @@ export function renderChart(ctx, W, H, section, optsIn = {}) {
   else { const pad = (ymax - ymin) * 0.08 + 0.4; ymin -= pad; ymax += pad * 1.3; }
 
   // plot rect
-  const L = 70, R = 18, T = 14, B = 52;
+  const L = 80, R = 20, T = 16, B = 60;
   const pL = L, pT = T, pW = W - L - R, pH = H - T - B;
   const sx = (x) => pL + ((x - xmin) / (xmax - xmin)) * pW;
   const sy = (y) => pT + ((ymax - y) / (ymax - ymin)) * pH;
 
   // gridlines + ticks
-  const fontPx = Math.round(W / 72);
+  const fontPx = Math.round(W / 60);
   ctx.lineWidth = 1;
   ctx.font = `${fontPx}px Arial, sans-serif`;
   ctx.textBaseline = "middle";
@@ -218,7 +218,7 @@ export function renderChart(ctx, W, H, section, optsIn = {}) {
   ctx.textAlign = "center"; ctx.textBaseline = "bottom";
   ctx.fillText(o.xTitle, pL + pW / 2, H - 6);
   ctx.save();
-  ctx.translate(14, pT + pH / 2); ctx.rotate(-Math.PI / 2);
+  ctx.translate(18, pT + pH / 2); ctx.rotate(-Math.PI / 2);
   ctx.textBaseline = "top"; ctx.fillText(o.yTitle, 0, 0);
   ctx.restore();
 
@@ -242,8 +242,8 @@ function drawNote(ctx, text, x, yBottom, fontPx) {
 }
 
 function drawLegend(ctx, series, o, geo, fontPx) {
-  ctx.font = `${Math.round(fontPx * 0.95)}px Arial, sans-serif`;
-  const rowH = Math.round(fontPx * 1.5);
+  ctx.font = `${Math.round(fontPx * 1.05)}px Arial, sans-serif`;
+  const rowH = Math.round(fontPx * 1.6);
   const swatch = Math.round(fontPx * 1.4);
   let textW = 0;
   for (const s of series) textW = Math.max(textW, ctx.measureText(s.name).width);
