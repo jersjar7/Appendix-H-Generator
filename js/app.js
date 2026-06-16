@@ -12,7 +12,19 @@ const PRESETS = {
   proposed: ["2-year", "100-year", "500-year", "2080 100-year"],
 };
 
-let state = { sections: [], canvases: [] };
+let state = { sections: [], canvases: [], order: "asc" };
+
+// Numeric sort key from a station: prefer the matched value, else parse "10+47".
+function stationKey(sec) {
+  if (typeof sec.station === "number" && isFinite(sec.station)) return sec.station;
+  const m = /(-?\d+)\s*\+\s*(\d+(?:\.\d+)?)/.exec(sec.stationLabel || "");
+  if (m) return parseInt(m[1], 10) * 100 + parseFloat(m[2]);
+  return sec.index;
+}
+function orderedSections() {
+  const sorted = [...state.sections].sort((a, b) => stationKey(a) - stationKey(b));
+  return state.order === "desc" ? sorted.reverse() : sorted;
+}
 
 // ---------- event-list editor ----------
 function eventRows() {
@@ -57,7 +69,7 @@ function setMessages(items) {
 function generate() {
   const events = eventRows();
   const conditionLabel = $("condition").value.trim();
-  const roundingMode = $("rounding").value;
+  const roundingMode = "nearest"; // stations are always rounded to the nearest foot
   const { rows: summaryRows, warnings: sumW } = parseSummary($("summary").value || "");
   const { pairs, warnings: profW } = parseProfile($("profile").value || "");
 
@@ -102,30 +114,45 @@ function renderResults(conditionLabel) {
   wrap.innerHTML = "";
   state.canvases = [];
 
-  state.sections.forEach((sec, i) => {
+  // order toolbar
+  if (state.sections.length > 1) {
+    const bar = document.createElement("div");
+    bar.className = "order-bar";
+    bar.innerHTML = `<span>Ordered by station — <strong>${state.order === "asc" ? "ascending" : "descending"}</strong></span>
+      <button id="orderToggle" class="ghost small">Switch to ${state.order === "asc" ? "descending" : "ascending"}</button>`;
+    wrap.appendChild(bar);
+    bar.querySelector("#orderToggle").addEventListener("click", () => {
+      state.order = state.order === "asc" ? "desc" : "asc";
+      renderResults(conditionLabel);
+    });
+  }
+
+  const sel = (v, x) => (String(v) === String(x) ? " selected" : "");
+  orderedSections().forEach((sec) => {
     const card = document.createElement("div");
     card.className = "chart-card";
     const canvas = document.createElement("canvas");
     canvas.width = CANVAS_W; canvas.height = CANVAS_H;
     card.appendChild(canvas);
 
+    const st = sec.structure;
     const tools = document.createElement("div");
     tools.className = "chart-tools";
     tools.innerHTML = `
       <label class="grow">Station label
         <input type="text" class="station" value="${escapeAttr(sec.stationLabel || "")}" />
       </label>
-      <label>Y min <input type="number" step="0.5" class="ymin small-input" /></label>
-      <label>Y max <input type="number" step="0.5" class="ymax small-input" /></label>
+      <label>Y min <input type="number" step="0.5" class="ymin small-input" value="${sec.yOverride ? sec.yOverride.min : ""}" /></label>
+      <label>Y max <input type="number" step="0.5" class="ymax small-input" value="${sec.yOverride ? sec.yOverride.max : ""}" /></label>
       <label>Structure
         <select class="stype">
-          <option value="">None</option>
-          <option value="Culvert">Culvert (line)</option>
-          <option value="Bridge">Bridge (box)</option>
+          <option value=""${sel("", st?.type)}>None</option>
+          <option value="Culvert"${sel("Culvert", st?.type)}>Culvert (line)</option>
+          <option value="Bridge"${sel("Bridge", st?.type)}>Bridge (box)</option>
         </select>
       </label>
-      <label>at X <input type="number" step="0.5" class="sx small-input" /></label>
-      <label>top <input type="number" step="0.5" class="stop small-input" /></label>`;
+      <label>at X <input type="number" step="0.5" class="sx small-input" value="${st ? st.x : ""}" /></label>
+      <label>top <input type="number" step="0.5" class="stop small-input" value="${st ? st.top : ""}" /></label>`;
     card.appendChild(tools);
 
     const cap = document.createElement("div");
