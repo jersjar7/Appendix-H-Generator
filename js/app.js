@@ -100,10 +100,16 @@ function generate() {
   renderResults(conditionLabel);
   $("download").disabled = state.sections.length === 0;
 
-  // save this run to local history
-  saveRun({
-    condition: conditionLabel,
-    events,
+  // save these inputs to local history (text from steps 1-3, not the charts)
+  saveRun({ ...currentInputs(), count: result.sections.length });
+  renderHistory();
+}
+
+// snapshot of the current step 1-3 inputs
+function currentInputs() {
+  return {
+    condition: $("condition").value.trim(),
+    events: eventRows(),
     summary: $("summary").value,
     profile: $("profile").value,
     options: {
@@ -112,9 +118,18 @@ function generate() {
       optThalweg: $("optThalweg").checked,
       optLegend: $("optLegend").checked,
     },
-    count: result.sections.length,
-  });
+  };
+}
+
+// explicit "Save inputs" — store the pasted values without generating charts
+function saveInputs() {
+  if (!$("summary").value.trim() && !$("profile").value.trim()) {
+    setMessages([{ type: "warn", text: "Nothing to save yet — paste your Summary Table or profile values first." }]);
+    return;
+  }
+  saveRun(currentInputs());
   renderHistory();
+  setMessages([{ type: "ok", text: "Inputs saved to this device. Reload them anytime from “Saved inputs” at the top." }]);
 }
 
 function chartOptions() {
@@ -299,9 +314,10 @@ function renderHistory() {
   for (const run of runs) {
     const li = document.createElement("li");
     const events = (run.events || []).join(", ");
+    const count = run.count ? ` · ${run.count} XS` : "";
     li.innerHTML = `
       <div class="hmeta">
-        <div class="htitle">${escapeAttr(run.condition || "Run")} · ${run.count || "?"} XS</div>
+        <div class="htitle">${escapeAttr(run.condition || "Saved inputs")}${count}</div>
         <div class="hsub">${escapeAttr(events)} — ${fmtDate(run.savedAt)}</div>
       </div>
       <button class="mini load">Load</button>
@@ -316,7 +332,7 @@ function renderHistory() {
 
 function loadRun(run) {
   const dirty = $("summary").value.trim() || $("profile").value.trim() || state.sections.length;
-  if (dirty && !window.confirm("Load this run? It will replace your current inputs.")) return;
+  if (dirty && !window.confirm("Load these inputs? They will replace your current values.")) return;
   $("condition").value = run.condition || "";
   renderEventList(run.events && run.events.length ? run.events : PRESETS.existing);
   $("summary").value = run.summary || "";
@@ -327,8 +343,10 @@ function loadRun(run) {
   $("optThalweg").checked = o.optThalweg !== false;
   $("optLegend").checked = o.optLegend !== false;
   updateAutoCount();
-  generate();
+  // refill the inputs only — let the user review, then click Generate.
   $("historyPanel").open = false;
+  setMessages([{ type: "ok", text: "Inputs loaded into steps 1–3. Review them, then click “Generate charts”." }]);
+  $("summary").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 // ---------- init ----------
@@ -346,6 +364,7 @@ document.querySelectorAll("[data-preset]").forEach((b) =>
   })
 );
 $("generate").addEventListener("click", generate);
+$("saveInputs").addEventListener("click", saveInputs);
 $("download").addEventListener("click", download);
 ["optEarth", "optWater", "optThalweg", "optLegend"].forEach((id) => $(id).addEventListener("change", redrawAll));
 $("summary").addEventListener("input", updateAutoCount);
