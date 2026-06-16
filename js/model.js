@@ -97,32 +97,33 @@ function assignStations(sections, summaryRows, opts, warnings) {
   const hasZ =
     summaryRows && summaryRows.length && summaryRows.every((r) => typeof r.zmin === "number" && isFinite(r.zmin));
 
-  if (hasZ && summaryRows.length >= sections.length) {
-    const pool = summaryRows.map((r, i) => ({ ...r, i, used: false }));
-    for (const sec of sections) {
-      let best = null;
-      let bestDiff = Infinity;
-      for (const row of pool) {
-        if (row.used) continue;
-        const diff = Math.abs(row.zmin - sec.groundMin);
-        if (diff < bestDiff) {
-          bestDiff = diff;
-          best = row;
-        }
+  if (hasZ) {
+    // Optimal 1-D assignment: matching thalwegs to Z-mins to minimize total
+    // mismatch is solved by sorting both by elevation and pairing rank-to-rank.
+    // (Greedy nearest-available can mis-assign and cascade — that was the bug.)
+    const secSorted = [...sections].sort((a, b) => a.groundMin - b.groundMin);
+    const rowSorted = [...summaryRows].sort((a, b) => a.zmin - b.zmin);
+
+    if (secSorted.length !== rowSorted.length) {
+      warnings.push(
+        `Summary Table lists ${rowSorted.length} station${rowSorted.length === 1 ? "" : "s"} but ${secSorted.length} cross section${secSorted.length === 1 ? "" : "s"} were detected — pairing the overlap by thalweg order.`
+      );
+    }
+    const n = Math.min(secSorted.length, rowSorted.length);
+    for (let i = 0; i < n; i++) {
+      const sec = secSorted[i];
+      const row = rowSorted[i];
+      sec.station = row.station;
+      sec.stationLabel = formatStation(row.station, opts.roundingMode);
+      sec.matchDiff = Math.abs(row.zmin - sec.groundMin);
+      if (sec.matchDiff > 1.0) {
+        warnings.push(
+          `Station ${sec.stationLabel}: thalweg differs from Summary Z-min by ${sec.matchDiff.toFixed(2)} ft — verify the match.`
+        );
       }
-      if (best) {
-        best.used = true;
-        sec.station = best.station;
-        sec.stationLabel = formatStation(best.station, opts.roundingMode);
-        sec.matchDiff = bestDiff;
-        if (bestDiff > 1.0) {
-          warnings.push(
-            `Station ${sec.stationLabel}: thalweg differs from Summary Z-min by ${bestDiff.toFixed(
-              2
-            )} ft — verify the match.`
-          );
-        }
-      }
+    }
+    for (let i = n; i < secSorted.length; i++) {
+      secSorted[i].stationLabel = `Section ${secSorted[i].index + 1}`;
     }
     return;
   }
