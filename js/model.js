@@ -4,6 +4,7 @@
 // Z-min (column/arc-order-independent).
 
 import { formatStation } from "./parse.js";
+import { sectionOutlierCount } from "./trim.js";
 
 const mean = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : NaN);
 const min = (a) => (a.length ? Math.min(...a) : Infinity);
@@ -88,6 +89,21 @@ export function buildSections(pairs, summaryRows, opts) {
   }
 
   assignStations(sections, summaryRows, opts, warnings);
+
+  // Flag (never auto-remove) disconnected "extra area" points so the UI can
+  // offer a per-chart trim. See js/trim.js.
+  const flagged = [];
+  for (const sec of sections) {
+    sec.outlierCount = sectionOutlierCount(sec);
+    if (sec.outlierCount > 0) flagged.push(`${sec.stationLabel} (${sec.outlierCount})`);
+  }
+  if (flagged.length) {
+    warnings.push(
+      `Possible disconnected "extra-area" points detected at ${flagged.join(", ")}. ` +
+        `These distort the chart but not the station match; use the "Trim outliers" control on those charts to drop them — nothing is removed automatically.`
+    );
+  }
+
   return { sections, warnings, datasetsPerSection: dps, eventNames };
 }
 
