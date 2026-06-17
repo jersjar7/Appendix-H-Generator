@@ -112,21 +112,28 @@ export function buildRunReport(run, opts = {}) {
       );
     });
 
-    // The actual optimal 1-D pairing the matcher uses: sort both, pair rank-to-rank.
+    // The pairing the matcher uses: rank sections by average water-surface
+    // elevation, pair rank-to-rank with stations sorted by stationing. Z-min is
+    // shown only as a cross-check (NOT the join key).
     L.push("");
-    L.push("Optimal 1-D pairing  (sections sorted by thalweg  ↔  stations sorted by Z-min):");
+    L.push("Assignment  (sections ranked by thalweg  ↔  stations sorted by stationing):");
+    const avgWS = (s) => {
+      const m = (s.surfaces || []).map((x) => statsOf(x.val).mean).filter((v) => isFinite(v));
+      return m.length ? m.reduce((a, b) => a + b, 0) / m.length : s.groundMin;
+    };
     const secSorted = [...sections].sort((a, b) => a.groundMin - b.groundMin);
-    const rowSorted = [...sum.rows].filter((r) => isFinite(r.zmin)).sort((a, b) => a.zmin - b.zmin);
-    L.push(`  ${pad("rank", 6)}${pad("thalweg", 11)}${pad("Z-min", 11)}${pad("diff", 9)}${pad("station", 11)}flag`);
+    const rowSorted = [...sum.rows].sort((a, b) => a.station - b.station);
+    L.push(`  ${pad("rank", 6)}${pad("avgWS", 10)}${pad("thalweg", 11)}${pad("station", 11)}${pad("Z-min(xchk)", 13)}${pad("diff", 8)}flag`);
     const n = Math.max(secSorted.length, rowSorted.length);
     for (let i = 0; i < n; i++) {
       const s = secSorted[i], r = rowSorted[i];
+      const ws = s ? f2(avgWS(s)) : "—";
       const tw = s ? f2(s.groundMin) : "—";
-      const zm = r ? f2(r.zmin) : "—";
-      const diff = s && r ? Math.abs(s.groundMin - r.zmin) : NaN;
       const sta = r ? formatStation(r.station, "nearest") : "(no station)";
-      const flag = isFinite(diff) && diff > 1.0 ? "  <-- DIFF > 1 ft" : "";
-      L.push(`  ${pad(i + 1, 6)}${pad(tw, 11)}${pad(zm, 11)}${pad(f2(diff), 9)}${pad(sta, 11)}${flag}`);
+      const zm = r && isFinite(r.zmin) ? f2(r.zmin) : "—";
+      const diff = s && r && isFinite(r.zmin) ? Math.abs(s.groundMin - r.zmin) : NaN;
+      const flag = isFinite(diff) && diff > 2.0 ? "  <-- Z-min off (informational)" : "";
+      L.push(`  ${pad(i + 1, 6)}${pad(ws, 10)}${pad(tw, 11)}${pad(sta, 11)}${pad(zm, 13)}${pad(f2(diff), 8)}${flag}`);
     }
 
     L.push("");

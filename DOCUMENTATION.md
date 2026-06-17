@@ -154,31 +154,38 @@ This is modeler-naming-independent and column-order-independent. It is the one
 heuristic from the Excel that was actually sound, and we keep it.
 
 ### Problem B — Which group of columns belongs to which station?
-This is the one the Excel got wrong and the web app originally got wrong too.
+This is the one the Excel got wrong-looking but actually gets right, and the one
+the web app got **wrong** until 2026-06-17.
 
-- The **authoritative** station list + each station's **thalweg (`Z Min`)** come
-  from the SMS **Summary Table**.
-- Each detected cross section has a computed **ground minimum** (its thalweg).
-- **Match each section to a station by thalweg ↔ `Z Min`.**
+- The **authoritative** station list comes from the SMS **Summary Table**.
+- Each detected cross section has a computed **thalweg** (its ground minimum).
+- **Pair them by ORDER:** sort the sections by thalweg ascending, sort the
+  stations by **stationing** ascending, pair rank-to-rank (lowest section →
+  lowest station). The channel bed rises monotonically going upstream, so
+  thalweg rank tracks station rank. Implemented in `js/model.js →
+  assignStations()`. Regression test: `test/matching.mjs`.
 
-**The bug we fixed:** the first implementation used *greedy nearest-available*
-matching (walk sections in paste order, each grabs the closest unused `Z Min`).
-Greedy 1-D matching is **not** globally optimal — an early section can steal a
-`Z Min` meant for another, cascading until the last section gets a wildly wrong
-leftover (we saw a 37.76 ft error and a deep cross section mislabeled `16+60`).
+**This is exactly what the reference Excel does** (its embedded instructions say
+*"enter the cross section names … in increasing order of stationing"* and it
+ranks sections by elevation — "XS Rank" / "XS Avg WS"). The Excel **never uses
+the Summary `Z Min` at all.**
 
-**The fix (current):** the optimal 1-D assignment that minimizes total
-mismatch is **sort both lists and pair rank-to-rank** — sort sections by
-thalweg ascending, sort stations by `Z Min` ascending, pair index `i` to index
-`i`. Since each thalweg equals exactly one `Z Min`, every section snaps to its
-correct station. Implemented in `js/model.js → assignStations()`. Regression
-test: `test/matching.mjs`.
+**The bug we removed:** earlier versions used the Summary **`Z Min`** as the join
+key — first greedy-nearest, then sort-by-`Z Min` and pair. Both assume
+`thalweg == Z Min`. On a real Proposed reach that assumption broke: for 3 of 12
+stations the Summary `Z Min` differed from the observation-profile thalweg by
+6–21 ft (they are **different SMS measurements** — the 1D FHD coverage line vs
+the observation arc), and `Z Min` is **non-monotonic** along the reach (it spikes
+then drops). Sorting stations by `Z Min` therefore scrambled the upper sections
+(e.g. the section with thalweg 71.42 ft, truly `14+13`, was mislabeled `14+91`).
+Pairing by stationing order fixes it and reproduces the Excel's tabs exactly.
 
-**Residual safety:** if a paired section's thalweg still differs from its
-`Z Min` by **> 1.0 ft**, the app emits a warning (`"Station X: thalweg differs
-from Summary Z-min by N ft — verify the match."`). After the fix these should
-only appear for genuinely odd data (e.g., the "weird extra areas" SMS sometimes
-emits, see §19).
+**Z Min is now a soft cross-check only:** if a paired section's thalweg differs
+from its `Z Min` by **> 2.0 ft**, the app emits an *informational* note
+(`"Station X: Summary Z-min (…) differs from the profile thalweg (…) by N ft.
+Sections are assigned by stationing order, so this is informational…"`). It does
+**not** drive the assignment. The full per-section pairing (thalweg, station,
+`Z Min` cross-check, diff) is in the saved-run **Report** (§9, `js/report.js`).
 
 ---
 
@@ -313,11 +320,13 @@ test/*.mjs        Node test suites (see §17)
   - **Datasets per section** = `events.length + 1` if events given, else
     `round(pairs.length / summaryRows.length)`.
   - Chunks pairs into sections, runs Problem-A classification, then
-    `assignStations` (Problem-B optimal matching).
+    `assignStations` (Problem-B order-based pairing).
   - Emits warnings for non-divisible counts, count mismatches between Summary
-    and profile, and >1 ft thalweg/`Z Min` residuals.
-- `assignStations(sections, summaryRows, opts, warnings)` — optimal 1-D
-  sort-and-pair matching; fallback to thalweg-ordered labels when no `Z Min`.
+    and profile, and >2 ft thalweg/`Z Min` residuals (informational only).
+- `assignStations(sections, summaryRows, opts, warnings)` — pairs sections
+  ranked by thalweg with stations sorted by **stationing**, rank-to-rank (the
+  Excel logic, §5). `Z Min` is a soft cross-check, not the join key. Fallback to
+  explicit/elevation-ordered labels when no Summary stations are given.
 
 ### `js/chart.js`
 - `export const DEFAULTS` — colors, fills, gridlines, axis titles, the note text,

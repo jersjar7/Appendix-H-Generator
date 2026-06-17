@@ -22,20 +22,22 @@ ok("lists flow events", rep.includes("1. 2-year") && rep.includes("3. 500-year")
 ok("reports detected Station/Z-min columns", /detected Station col #\d/.test(rep));
 ok("shows per-dataset stats with point counts", rep.includes("points") && rep.includes("meanVal"));
 ok("has the matching section", rep.includes("STATION MATCHING"));
-ok("has the optimal pairing table", rep.includes("Optimal 1-D pairing"));
+ok("has the assignment table", rep.includes("Assignment"));
 ok("assigns correct stations 10+47 / 12+72", rep.includes("10+47") && rep.includes("12+72"));
-ok("clean run flags NO diff>1ft", !rep.includes("DIFF > 1 ft"));
+ok("clean run flags NO Z-min-off", !rep.includes("Z-min off"));
 ok("clean run build warnings: none", /Build warnings: none/.test(rep));
 
-// ---- Mismatch run: a Z-min that no thalweg matches → diff>1ft + warning ----
+// ---- Z-min cross-check run: a Z-min far from the thalweg → informational flag ----
 const badSummary = ["Reach\tStation\tMin", "Hood Canal\t1047.09\t54.78", "Hood Canal\t1660.00\t70.00"].join("\n");
 const badRun = { ...cleanRun, id: "r2", summary: badSummary };
 const rep2 = buildRunReport(badRun, { now: "2026-06-17T00:00:00Z" });
 
-console.log("mismatch run:");
-ok("surfaces a DIFF > 1 ft flag in the pairing table", rep2.includes("DIFF > 1 ft"));
-ok("emits a 'differs from Summary Z-min' build warning", /differs from Summary Z-min/.test(rep2));
-ok("rollup lists the warning", /ALL WARNINGS/.test(rep2) && /differs from Summary Z-min/.test(rep2.split("ALL WARNINGS")[1]));
+console.log("Z-min cross-check run:");
+ok("flags the Z-min cross-check as informational", rep2.includes("Z-min off"));
+ok("emits a 'differs from the profile thalweg' note", /differs from the profile thalweg/.test(rep2));
+ok("assignment is still by stationing order (54.78->10+47, 65.25->16+60)",
+   rep2.includes("10+47") && rep2.includes("16+60"));
+ok("rollup lists the note", /ALL WARNINGS/.test(rep2) && /differs from the profile thalweg/.test(rep2.split("ALL WARNINGS")[1]));
 
 // ---- Empty / no-data dataset is flagged ----
 // Middle dataset has no values (a non-trailing empty pair survives parsing;

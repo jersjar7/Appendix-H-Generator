@@ -24,7 +24,7 @@ test("report: a saved run downloads a .txt diagnostic with matching + inputs", a
   expect(text).toContain("RUN DIAGNOSTIC REPORT");
   expect(text).toContain("STEP 2 — SUMMARY TABLE");
   expect(text).toContain("STATION MATCHING");
-  expect(text).toContain("Optimal 1-D pairing");
+  expect(text).toContain("Assignment");
   expect(text).toContain("10+47");
   expect(text).toContain("12+72");
 });
