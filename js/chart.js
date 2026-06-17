@@ -100,7 +100,11 @@ export function renderChart(ctx, W, H, section, optsIn = {}) {
       ymin = Math.min(ymin, s.val[i]); ymax = Math.max(ymax, s.val[i]);
     }
   const st = section.structure;
-  if (st) { ymin = Math.min(ymin, st.bottom); ymax = Math.max(ymax, st.top); xmin = Math.min(xmin, st.x); xmax = Math.max(xmax, st.x); }
+  if (st) {
+    const halfW = (st.width || 0) / 2;
+    ymin = Math.min(ymin, st.bottom); ymax = Math.max(ymax, st.top);
+    xmin = Math.min(xmin, st.x - halfW); xmax = Math.max(xmax, st.x + halfW);
+  }
   if (section.yOverride) { ymin = section.yOverride.min; ymax = section.yOverride.max; }
   else { const pad = (ymax - ymin) * 0.08 + 0.4; ymin -= pad; ymax += pad * 1.3; }
 
@@ -175,17 +179,18 @@ export function renderChart(ctx, W, H, section, optsIn = {}) {
     ctx.setLineDash([]);
   }
 
-  // structure (culvert/bridge)
+  // culvert box (plain 4-sided outline, no fillets)
   if (st) {
     ctx.strokeStyle = o.structureColor;
     ctx.lineWidth = Math.max(2, W / 600);
-    if (st.type === "Bridge" || st.box) {
-      // box: two verticals + top
-      const w = (st.width || 0);
+    ctx.lineJoin = "miter";
+    const w = st.width || 0;
+    if (w > 0) {
       const x0 = sx(st.x - w / 2), x1 = sx(st.x + w / 2);
-      line(ctx, x0, sy(st.bottom), x0, sy(st.top));
-      line(ctx, x1, sy(st.bottom), x1, sy(st.top));
-      line(ctx, x0, sy(st.top), x1, sy(st.top));
+      const yb = sy(st.bottom), yt = sy(st.top);
+      ctx.beginPath();
+      ctx.rect(Math.min(x0, x1), Math.min(yb, yt), Math.abs(x1 - x0), Math.abs(yb - yt));
+      ctx.stroke();
     } else {
       line(ctx, sx(st.x), sy(st.bottom), sx(st.x), sy(st.top));
     }
@@ -226,7 +231,8 @@ export function renderChart(ctx, W, H, section, optsIn = {}) {
   drawNote(ctx, o.note, pL + 8, pT + pH - 8, fontPx);
 
   // legend (smart inside placement, or fixed top-right)
-  drawLegend(ctx, series, o, { pL, pT, pW, pH, sx, sy }, fontPx);
+  const legendItems = st ? series.concat([{ name: "Culvert", color: o.structureColor }]) : series;
+  drawLegend(ctx, legendItems, o, { pL, pT, pW, pH, sx, sy }, fontPx);
 
   ctx.restore();
 }
@@ -262,11 +268,13 @@ function drawLegend(ctx, series, o, geo, fontPx) {
   if (o.legendInside) {
     for (const [bx, by] of candidates) {
       let score = 0;
-      for (const s of series)
+      for (const s of series) {
+        if (!s.dist) continue;
         for (let i = 0; i < s.dist.length; i++) {
           const px = sx(s.dist[i]), py = sy(s.val[i]);
           if (px >= bx && px <= bx + boxW && py >= by && py <= by + boxH) score++;
         }
+      }
       if (score < bestScore) { bestScore = score; best = [bx, by]; }
     }
   } else best = candidates[0];

@@ -214,15 +214,19 @@ function renderResults(conditionLabel) {
       </label>
       <label>Y min <input type="number" step="0.5" class="ymin small-input" value="${sec.yOverride ? sec.yOverride.min : ""}" /></label>
       <label>Y max <input type="number" step="0.5" class="ymax small-input" value="${sec.yOverride ? sec.yOverride.max : ""}" /></label>
-      <label>Structure
+      <label>Culvert
         <select class="stype">
-          <option value=""${sel("", st?.type)}>None</option>
-          <option value="Culvert"${sel("Culvert", st?.type)}>Culvert (line)</option>
-          <option value="Bridge"${sel("Bridge", st?.type)}>Bridge (box)</option>
+          <option value=""${sel("", st ? "Culvert" : "")}>None</option>
+          <option value="Culvert"${sel("Culvert", st ? "Culvert" : "")}>Add box</option>
         </select>
       </label>
-      <label>at X <input type="number" step="0.5" class="sx small-input" value="${st ? st.x : ""}" /></label>
-      <label>top <input type="number" step="0.5" class="stop small-input" value="${st ? st.top : ""}" /></label>`;
+      <span class="culvert-fields"${st ? "" : ' hidden'}>
+        <label>Scour (ft) <input type="number" step="0.1" class="cscour small-input" value="${st ? st.scour : ""}" /></label>
+        <label>Box height (ft) <input type="number" step="0.1" class="cheight small-input" value="${st ? st.height : ""}" /></label>
+        <label>Width (ft) <input type="number" step="0.1" class="cwidth small-input" value="${st ? st.width : ""}" /></label>
+        <label>Center X <input type="number" step="0.5" class="ccenter small-input" placeholder="thalweg" value="${st && st.center != null ? st.center : ""}" /></label>
+        <label>Bed (ft) <input type="number" step="0.1" class="cbed small-input" value="${st ? st.bed : 2}" /></label>
+      </span>`;
     card.appendChild(tools);
 
     const cap = document.createElement("div");
@@ -254,17 +258,29 @@ function renderResults(conditionLabel) {
     };
     yminEl.addEventListener("change", applyY); ymaxEl.addEventListener("change", applyY);
 
-    const stype = tools.querySelector(".stype"), sxEl = tools.querySelector(".sx"), stopEl = tools.querySelector(".stop");
+    const stype = tools.querySelector(".stype");
+    const fields = tools.querySelector(".culvert-fields");
+    const scourEl = tools.querySelector(".cscour"), heightEl = tools.querySelector(".cheight");
+    const widthEl = tools.querySelector(".cwidth"), centerEl = tools.querySelector(".ccenter"), bedEl = tools.querySelector(".cbed");
+    const thalwegX = sec.ground.dist[argmin(sec.ground.val)];
     const applyStruct = () => {
-      const t = stype.value;
-      if (!t) { sec.structure = null; draw(); return; }
-      const x = parseFloat(sxEl.value), top = parseFloat(stopEl.value);
-      sec.structure = { type: t, box: t === "Bridge", width: t === "Bridge" ? Math.max(2, (Math.max(...sec.ground.dist) - Math.min(...sec.ground.dist)) * 0.05) : 0,
-        x: isNaN(x) ? sec.ground.dist[argmin(sec.ground.val)] : x,
-        bottom: sec.groundMin, top: isNaN(top) ? sec.groundMin + 6 : top };
+      fields.hidden = stype.value !== "Culvert";
+      if (stype.value !== "Culvert") { sec.structure = null; draw(); return; }
+      const scour = parseFloat(scourEl.value), height = parseFloat(heightEl.value), width = parseFloat(widthEl.value);
+      let bed = parseFloat(bedEl.value); if (isNaN(bed)) bed = 2;
+      const centerRaw = parseFloat(centerEl.value);
+      const center = isNaN(centerRaw) ? null : centerRaw;
+      // Need scour + height + width to draw the box; otherwise wait for input.
+      if (isNaN(scour) || isNaN(height) || isNaN(width)) { sec.structure = null; draw(); return; }
+      const bottom = sec.groundMin - scour - bed;
+      sec.structure = {
+        type: "Culvert", scour, height, width, bed, center,
+        x: center == null ? thalwegX : center,
+        bottom, top: bottom + height,
+      };
       draw();
     };
-    [stype, sxEl, stopEl].forEach((el) => el.addEventListener("change", applyStruct));
+    [stype, scourEl, heightEl, widthEl, centerEl, bedEl].forEach((el) => el.addEventListener("input", applyStruct));
   });
 
   const firstChip = chips.querySelector(".chip");
