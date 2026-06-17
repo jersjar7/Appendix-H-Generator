@@ -293,6 +293,7 @@ js/chart.js       Canvas2D cross-section renderer (exports DEFAULTS, renderChart
 js/zip.js         dependency-free ZIP writer (STORE method + CRC32)
 js/docx.js        assembles a .docx from chart PNGs + captions
 js/history.js     localStorage-backed run history
+js/report.js      per-saved-run text diagnostic (inputs + matching + warnings)
 js/app.js         UI controller: wires inputs → model → chart → docx
 test/*.mjs        Node test suites (see §17)
 ```
@@ -342,6 +343,19 @@ test/*.mjs        Node test suites (see §17)
 - `isAvailable()`, `listRuns()`, `saveRun(run)`, `deleteRun(id)`, `clearRuns()`.
   localStorage key `appendixH.history.v1`, capped at **20** entries, de-duped by
   `condition + summary + profile`. See §14.
+
+### `js/report.js`
+- `buildRunReport(run, opts?) → string` — re-runs `parseSummary` →
+  `parseProfile` → `buildSections` on a **saved run's stored inputs** and renders
+  a plain-text diagnostic: the step 1/2/3 inputs verbatim, the parsed Summary
+  rows with **which columns were detected** as Station / Z-min, per-dataset
+  profile stats (point counts expose ragged / no-data columns; empty pairs are
+  flagged), and the **station-matching table** — the rank-to-rank
+  thalweg ↔ Z-min pairing the matcher used, with diffs and a `DIFF > 1 ft` flag —
+  plus every parse/build warning. Pure (no DOM); unit-tested in `test/report.mjs`.
+- `reportFilename(run) → string` — safe `<Condition>_diagnostic_<savedAt>.txt`.
+- Surfaced as a **Report** button per row in the *Saved inputs* panel; it is the
+  thing to attach when debugging a suspected station mis-match offline.
 
 ### `js/app.js`
 - Constants: `CANVAS_W=1300`, `CANVAS_H=772`, `IN_W=6.5`,
@@ -494,7 +508,10 @@ The generated package layout: `[Content_Types].xml`, `_rels/.rels`,
   adding a duplicate).
 - UI: a collapsible **"Saved inputs"** panel. **Save inputs** stores without
   generating; **Load** refills steps 1–3 only (no auto-generate) and scrolls to
-  the paste area; **Delete** / **Clear all** prompt for confirmation.
+  the paste area; **Delete** / **Clear all** prompt for confirmation. **Report**
+  downloads a plain-text diagnostic for that saved run (inputs + parsed Summary
+  columns + per-dataset stats + the thalweg ↔ Z-min matching table + warnings) —
+  built by `js/report.js` (§9), for debugging station mis-assignment offline.
 - **Caveat (document this to users):** history is **per browser/device**. It does
   not sync across devices and is wiped if the user clears site data. This is the
   honest trade-off of an account-free tool. The panel hides itself if
@@ -560,6 +577,7 @@ All tests are plain Node ESM scripts (Node 18+). Run them directly:
 node test/run.mjs        # parsing, elevation classification, station format, .docx assembly
 node test/matching.mjs   # regression: optimal Z-min station matching (the greedy-bug fix)
 node test/history.mjs    # localStorage history: save/order/de-dupe/delete/clear/cap
+node test/report.mjs     # saved-run diagnostic: inputs echo, matching table, warning flags
 node test/e2e.mjs        # full pipeline: parse → build → render charts → build a .docx
 # Visual/manual render helpers (need: npm install canvas):
 node test/render_test.mjs    # writes /tmp/chart_A.png, /tmp/chart_B.png

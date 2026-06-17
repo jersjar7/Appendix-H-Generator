@@ -72,7 +72,7 @@ test/ui/          Playwright real-browser UI tests
 ```bash
 npm install               # dev-only: @playwright/test + canvas (app ships zero deps)
 
-npm run test:node         # parsing, classification, station match, history, .docx
+npm run test:node         # parsing, classification, station match, history, report, .docx
 npm run test:ui           # Playwright (Chromium) real-browser UI coverage
 npm test                  # both
 
