@@ -91,22 +91,33 @@ export function buildSections(pairs, summaryRows, opts) {
   return { sections, warnings, datasetsPerSection: dps, eventNames };
 }
 
-// Match sections to stations. Preferred: nearest thalweg (groundMin <-> zmin).
-// Fallback: manual station labels applied to sections sorted by groundMin.
-function assignStations(sections, summaryRows, opts, warnings) {
-  const hasZ =
-    summaryRows && summaryRows.length && summaryRows.every((r) => typeof r.zmin === "number" && isFinite(r.zmin));
+// Elevation rank of a section: its thalweg (channel bed minimum). The channel
+// bed rises monotonically with stationing going upstream, so the thalweg is the
+// quantity that tracks station order. (The reference Excel ranks by "avg water
+// surface", which usually agrees but can invert when a low channel carries high
+// backwater — the thalweg is the more direct, stable key.)
+function rankKey(sec) {
+  return sec.groundMin;
+}
 
-  if (hasZ) {
-    // Optimal 1-D assignment: matching thalwegs to Z-mins to minimize total
-    // mismatch is solved by sorting both by elevation and pairing rank-to-rank.
-    // (Greedy nearest-available can mis-assign and cascade — that was the bug.)
-    const secSorted = [...sections].sort((a, b) => a.groundMin - b.groundMin);
-    const rowSorted = [...summaryRows].sort((a, b) => a.zmin - b.zmin);
+// Match sections to stations by ORDER, the way the reference Excel does it:
+// rank the cross sections by elevation and pair them, rank-to-rank, with the
+// station list sorted by stationing (lowest section -> lowest station). The
+// Summary Z-min is NOT used as a join key: on real reaches it can differ from
+// the observation-profile thalweg by 10-20 ft (it's a different SMS measurement)
+// and it is non-monotonic along the reach, which scrambled the pairing. Z-min is
+// kept only as a soft visual cross-check. Fallback: explicit station labels.
+function assignStations(sections, summaryRows, opts, warnings) {
+  const hasStations =
+    summaryRows && summaryRows.length && summaryRows.every((r) => typeof r.station === "number" && isFinite(r.station));
+
+  if (hasStations) {
+    const secSorted = [...sections].sort((a, b) => rankKey(a) - rankKey(b));
+    const rowSorted = [...summaryRows].sort((a, b) => a.station - b.station);
 
     if (secSorted.length !== rowSorted.length) {
       warnings.push(
-        `Summary Table lists ${rowSorted.length} station${rowSorted.length === 1 ? "" : "s"} but ${secSorted.length} cross section${secSorted.length === 1 ? "" : "s"} were detected — pairing the overlap by thalweg order.`
+        `Summary Table lists ${rowSorted.length} station${rowSorted.length === 1 ? "" : "s"} but ${secSorted.length} cross section${secSorted.length === 1 ? "" : "s"} were detected — pairing the overlap by stationing order.`
       );
     }
     const n = Math.min(secSorted.length, rowSorted.length);
@@ -115,11 +126,14 @@ function assignStations(sections, summaryRows, opts, warnings) {
       const row = rowSorted[i];
       sec.station = row.station;
       sec.stationLabel = formatStation(row.station, opts.roundingMode);
-      sec.matchDiff = Math.abs(row.zmin - sec.groundMin);
-      if (sec.matchDiff > 1.0) {
-        warnings.push(
-          `Station ${sec.stationLabel}: thalweg differs from Summary Z-min by ${sec.matchDiff.toFixed(2)} ft — verify the match.`
-        );
+      if (typeof row.zmin === "number" && isFinite(row.zmin)) {
+        sec.matchDiff = Math.abs(row.zmin - sec.groundMin);
+        // Soft cross-check only — the assignment is by stationing order, not this.
+        if (sec.matchDiff > 2.0) {
+          warnings.push(
+            `Station ${sec.stationLabel}: Summary Z-min (${row.zmin.toFixed(2)}) differs from the profile thalweg (${sec.groundMin.toFixed(2)}) by ${sec.matchDiff.toFixed(2)} ft. Sections are assigned by stationing order, so this is informational — verify visually if this one looks off.`
+          );
+        }
       }
     }
     for (let i = n; i < secSorted.length; i++) {
@@ -128,8 +142,8 @@ function assignStations(sections, summaryRows, opts, warnings) {
     return;
   }
 
-  // Fallback ordering by groundMin ascending (thalweg rises with stationing).
-  const order = [...sections].sort((a, b) => a.groundMin - b.groundMin);
+  // Fallback ordering by elevation rank ascending (profile rises with stationing).
+  const order = [...sections].sort((a, b) => rankKey(a) - rankKey(b));
   const labels =
     opts.stationLabels && opts.stationLabels.length
       ? opts.stationLabels
@@ -143,5 +157,5 @@ function assignStations(sections, summaryRows, opts, warnings) {
     sec.stationLabel = labels[i] || `Section ${sec.index + 1}`;
   });
   if (!labels.length)
-    warnings.push("No Summary Table or station labels provided — sections numbered by thalweg order.");
+    warnings.push("No Summary Table or station labels provided — sections numbered by elevation order.");
 }

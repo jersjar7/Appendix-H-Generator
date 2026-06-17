@@ -19,19 +19,23 @@ No install, no upload, no macros. The data never leaves your browser.
    - chunks the values into cross sections,
    - identifies which dataset is the ground vs each flood surface **by elevation**
      (independent of modeler naming or SMS column order),
-   - matches each section to its station by **thalweg ↔ `Z Min`** (exact, not guessed),
+   - matches each section to its station by **stationing order** — sections
+     ranked by thalweg pair with stations sorted by stationing (the reference
+     Excel's logic; the Summary `Z Min` is only a soft cross-check),
    - renders a styled chart per cross section.
 3. **Review** the charts (confirm/adjust station labels, axis extents, add a
    culvert/bridge), then **Download Word document**.
 
 ### Why it's more robust than the spreadsheet
 
-The Excel version inferred dataset identity by ranking minimum elevations and
-guessed station identity by assuming water-surface elevation rises with
-stationing. This tool keeps the reliable elevation logic but replaces the
-fragile station guess with a direct **thalweg-to-`Z Min` match**, validates the
-section count against the Summary Table, and lets you visually confirm every
-chart before export — so a wrong assignment can't ship silently.
+The Excel version infers dataset identity by ranking minimum elevations and
+station identity by pairing cross-sections (ranked by elevation) with the
+station list in stationing order. This tool keeps both of those (they're sound),
+adds the elevation-based **ground vs water-surface** classification so column
+order and arc names don't matter, validates the section count against the
+Summary Table, cross-checks each thalweg against the Summary `Z Min`, and lets
+you visually confirm every chart before export — so a wrong assignment can't
+ship silently.
 
 ## Flow events are fully configurable
 
