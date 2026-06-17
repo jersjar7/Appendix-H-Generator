@@ -7,6 +7,10 @@ Excel/VBA macro workflow.
 Everything runs **client-side**: paste your data, get charts, download a `.docx`.
 No install, no upload, no macros. The data never leaves your browser.
 
+> **Developers / testers:** see [`DOCUMENTATION.md`](DOCUMENTATION.md) for the
+> full design rationale, architecture, data formats, algorithms, and a testing
+> guide (including real browser integration/UI tests).
+
 ## What it does
 
 1. **Paste the SMS Summary Table** (Station + thalweg `Z Min`) and the
