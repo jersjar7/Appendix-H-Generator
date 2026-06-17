@@ -4,6 +4,7 @@ import { renderChart } from "./chart.js";
 import { buildDocx } from "./docx.js";
 import { isAvailable as historyAvailable, listRuns, saveRun, deleteRun, clearRuns } from "./history.js";
 import { buildRunReport, reportFilename } from "./report.js";
+import { trimmedDatasets } from "./trim.js";
 
 const $ = (id) => document.getElementById(id);
 const CANVAS_W = 1300, CANVAS_H = 772;
@@ -221,6 +222,9 @@ function renderResults(conditionLabel) {
           <option value="Culvert"${sel("Culvert", st ? "Culvert" : "")}>Add box</option>
         </select>
       </label>
+      ${sec.outlierCount > 0 ? `<label class="chk trim-toggle" title="Remove disconnected extra-area points (SMS stray segments) from this section">
+        <input type="checkbox" class="ctrim"${sec.trimmed ? " checked" : ""} /> Trim ${sec.outlierCount} outlier${sec.outlierCount === 1 ? "" : "s"}
+      </label>` : ""}
       <span class="culvert-fields"${st ? "" : ' hidden'}>
         <label>Scour (ft) <input type="number" step="0.1" class="cscour small-input" value="${st ? st.scour : ""}" /></label>
         <label>Box height (ft) <input type="number" step="0.1" class="cheight small-input" value="${st ? st.height : ""}" /></label>
@@ -282,6 +286,21 @@ function renderResults(conditionLabel) {
       draw();
     };
     [stype, scourEl, heightEl, widthEl, centerEl, bedEl].forEach((el) => el.addEventListener("input", applyStruct));
+
+    // optional per-chart trim of disconnected "extra area" points (user-driven)
+    const trimEl = tools.querySelector(".ctrim");
+    if (trimEl) {
+      trimEl.addEventListener("change", () => {
+        if (!sec._raw) sec._raw = { ground: sec.ground, surfaces: sec.surfaces };
+        if (trimEl.checked) {
+          const t = trimmedDatasets(sec._raw); // always trim from the raw data
+          sec.ground = t.ground; sec.surfaces = t.surfaces; sec.trimmed = true;
+        } else {
+          sec.ground = sec._raw.ground; sec.surfaces = sec._raw.surfaces; sec.trimmed = false;
+        }
+        draw();
+      });
+    }
   });
 
   const firstChip = chips.querySelector(".chip");

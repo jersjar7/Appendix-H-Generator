@@ -295,7 +295,8 @@ code but are not surfaced.
 index.html        UI markup (steps, options, history panel, results container)
 css/styles.css    styling
 js/parse.js       parse Summary Table + profile paste; formatStation
-js/model.js       elevation classification + optimal Z-min station matching
+js/model.js       elevation classification + stationing-order station matching
+js/trim.js        detect (not remove) disconnected "extra-area" profile points
 js/chart.js       Canvas2D cross-section renderer (exports DEFAULTS, renderChart)
 js/zip.js         dependency-free ZIP writer (STORE method + CRC32)
 js/docx.js        assembles a .docx from chart PNGs + captions
@@ -336,6 +337,21 @@ test/*.mjs        Node test suites (see §17)
   under `node-canvas`.
 - `surfaceColor(name, i, n)` — blue→green ramp; dashed amber for any name
   containing `2080`.
+
+### `js/trim.js`
+- `detectDisconnected(dist, val) → { keep, dropped }` — flags SMS "extra-area"
+  points: a cluster sitting at a wildly different elevation, reached by an abrupt
+  **>10 ft point-to-point jump** with no connecting slope points. Splits the
+  distance-sorted profile at such jumps, keeps the largest run, and drops only
+  small, clearly elevation-separated runs (conservative — densely-sampled
+  channels vs sparse banks would fool a distance-gap test, so it keys on
+  elevation jumps, not spacing).
+- `trimSeries(series)`, `trimmedDatasets(sec)`, `sectionOutlierCount(sec)` —
+  helpers that return trimmed **copies** (never mutate) and count outliers.
+- The thalweg (min) is always preserved, so trimming never affects the station
+  match. Detection only **flags**; removal is user-driven (§15). Test:
+  `test/trim.mjs`. Validated to reproduce the Excel's hand-trimmed point counts
+  (14+13: 23→18, 14+42: 26→21) while leaving the 10 clean sections untouched.
 
 ### `js/zip.js`
 - `makeZip(entries) → Uint8Array` where `entries = [{ name, data }]` (`data` is a
@@ -550,6 +566,11 @@ The generated package layout: `[Content_Types].xml`, `_rels/.rels`,
   (IntersectionObserver). Each card has per-chart controls: **Station label**,
   **Y min/Y max**, and **Culvert** (None / Add box → scour, box height, width,
   center X, bed). Edits persist across reorder/redraw and feed the Word export.
+  When a section carries disconnected "extra-area" points (§19), a **Trim N
+  outliers** checkbox also appears; toggling it removes those points (from the
+  chart and the Word export) and back, on demand — nothing is trimmed
+  automatically. Removing them also lets the Y-axis auto-range tighten to the
+  real channel.
 
 ---
 
@@ -727,11 +748,15 @@ font rasterization differs across platforms.
   dips at the structure and the anchoring thalweg would need rethinking.
   *Confirm per project.*
 - **"Weird extra areas"**: SMS sometimes emits stray/disconnected profile
-  segments that engineers delete by hand in the Excel workflow. The current
-  parser includes all non-`-9999` points. If small residual thalweg/`Z Min`
-  diffs persist after the matching fix, this is the likely cause; a future
-  enhancement could auto-trim disconnected segments. Needs a real
-  still-misbehaving paste to design against.
+  segments (a cluster at a wildly different elevation reached by an abrupt jump)
+  that engineers delete by hand in the Excel workflow. These distort the chart
+  (the ground line excursions and the Y-range balloons) but **not** the station
+  match (the thalweg/min is unaffected). `js/trim.js` **detects** them and the UI
+  surfaces a per-chart **Trim outliers** control (§9, §15) — removal is opt-in,
+  never automatic. Designed against a real Proposed paste where it reproduces the
+  Excel's hand-trimming exactly (14+13: 23→18, 14+42: 26→21 ground points). The
+  detector keys on >10 ft point-to-point elevation jumps, deliberately *not*
+  distance gaps (channels are sampled densely, banks sparsely).
 - **Single barrel only**: multi-barrel (twin/triple box) culverts are out of
   scope by decision. Adding them means allowing multiple structure objects per
   section.

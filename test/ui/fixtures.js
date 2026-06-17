@@ -65,6 +65,28 @@ export const EXPECTED = {
 // A profile that is NOT divisible by the section size (3 datasets for 1 section
 // of 4) — used to assert the auto-count "isn't whole" warning. We reuse one
 // section but drop a column so the math is ragged.
+// A single section (ground + 3 surfaces) whose GROUND carries two disconnected
+// ~82 ft stray points above a ~55 ft channel — exercises the outlier trim
+// control. Ground min (55) still matches the Summary Z-min, so the station
+// assignment is unaffected; only the chart is distorted until trimmed.
+export const SUMMARY_ONE = ["Reach\tStation\tMin", "Hood Canal\t1047.09\t54.78"].join("\n");
+export const PROFILE_WITH_OUTLIER = (() => {
+  const g = [[0, 57], [1, 56], [2, 55.5], [3, 55.2], [4, 55], [5, 55], [6, 55.3], [7, 55.8], [8, 56.5], [9, 57.5], [12, 82], [14, 82.5]];
+  const s1 = [[2, 57], [7, 57], [12, 57]], s2 = [[2, 57.5], [7, 57.5], [12, 57.5]], s3 = [[2, 58], [7, 58], [12, 58]];
+  const cols = [];
+  [g, s1, s2, s3].forEach((series) => { cols.push(series.map((p) => p[0])); cols.push(series.map((p) => p[1])); });
+  const n = Math.max(...cols.map((c) => c.length));
+  const head = [];
+  for (let i = 0; i < cols.length / 2; i++) head.push("Distance", "Value");
+  const lines = [head.join("\t")];
+  for (let r = 0; r < n; r++) {
+    const cells = [String(r + 1)];
+    for (const c of cols) cells.push(c[r] !== undefined ? String(c[r]) : "");
+    lines.push(cells.join("\t"));
+  }
+  return lines.join("\n");
+})();
+
 export const PROFILE_NOT_WHOLE = (() => {
   const lines = PROFILE_TSV.split("\n");
   // Keep header + rows but chop to an odd number of dataset columns by removing
