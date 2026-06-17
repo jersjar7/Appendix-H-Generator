@@ -64,12 +64,23 @@ js/zip.js         dependency-free ZIP writer
 js/docx.js        assembles the .docx
 js/app.js         UI wiring
 test/             Node tests (run.mjs unit, e2e.mjs full pipeline)
+test/ui/          Playwright real-browser UI tests
 ```
 
 ## Tests
 
 ```bash
-npm install canvas        # only needed for the headless render test
-node test/run.mjs         # parsing, classification, station format, docx
-node test/e2e.mjs         # full pipeline -> renders charts -> builds a .docx
+npm install               # dev-only: @playwright/test + canvas (app ships zero deps)
+
+npm run test:node         # parsing, classification, station match, history, .docx
+npm run test:ui           # Playwright (Chromium) real-browser UI coverage
+npm test                  # both
+
+# first time only, fetch the browser binary:
+npx playwright install chromium
 ```
+
+The UI tests (`test/ui/`) cover the things only a real browser exercises:
+chart-canvas rendering, the station chips + horizontal slider, the culvert box,
+the Word download (unzipped and asserted), history save/load, restart, and the
+auto-count validation hint. Playwright boots the static server itself.

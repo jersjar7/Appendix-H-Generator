@@ -544,9 +544,11 @@ npm install canvas
 `https://<user>.github.io/Appendix-H-Generator/`. Pages on a **private** repo
 requires GitHub Pro; otherwise make the repo public.
 
-> `node_modules/`, `package.json`, and `package-lock.json` are git-ignored.
-> `canvas` is a **dev/test-only** dependency (headless rendering); the app
-> itself ships zero dependencies.
+> `package.json` / `package-lock.json` are now **committed** (they pin the
+> dev-only test toolchain: `@playwright/test` for UI tests, `canvas` for headless
+> render tests). Only `node_modules/` is git-ignored. The app **itself** still
+> ships zero runtime dependencies — nothing in `js/` imports either package, and
+> GitHub Pages serves only the static files.
 
 ---
 
@@ -595,11 +597,17 @@ culvert controls only run in a real browser**. Recommended approach:
 **Playwright** (Chromium) against the static site.
 
 ### Setup
+The Playwright toolchain is committed (`package.json`, `playwright.config.js`,
+`test/ui/`). From a fresh clone:
 ```bash
-npm install -D @playwright/test
-npx playwright install chromium
-python3 -m http.server 8000 &     # serve the app
+npm install                       # installs @playwright/test + canvas (dev-only)
+npx playwright install chromium   # one-time browser download
+npm run test:ui                   # boots the static server itself, runs the suite
 ```
+`playwright.config.js` starts `python3 -m http.server 8000` automatically via its
+`webServer` block, so you don't serve the app by hand. The shared fixtures and
+helpers live in `test/ui/fixtures.js` and `test/ui/helpers.js`; one `*.spec.js`
+file per scenario group below.
 
 ### Test fixtures (known-good inputs and expected outputs)
 Paste these into the app to get a deterministic result.

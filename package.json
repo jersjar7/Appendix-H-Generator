@@ -1,0 +1,18 @@
+{
+  "name": "appendix-h-generator",
+  "version": "1.0.0",
+  "description": "Static browser app that turns SMS cross-section output into Appendix H charts and a Word document.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "serve": "python3 -m http.server 8000",
+    "test:node": "node test/run.mjs && node test/matching.mjs && node test/history.mjs && node test/e2e.mjs",
+    "test:ui": "playwright test",
+    "test:ui:headed": "playwright test --headed",
+    "test": "npm run test:node && npm run test:ui"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.0",
+    "canvas": "^3.1.0"
+  }
+}
