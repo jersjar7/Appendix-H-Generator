@@ -108,5 +108,8 @@ button.mini { padding: 2px 8px; font-size: 0.8rem; background: #eef2f7; color: v
 .chart-tools .grow { flex: 1; min-width: 160px; }
 .chart-tools input, .chart-tools select { font-size: 0.82rem; padding: 6px 8px; }
 .small-input { width: 90px; }
+.culvert-fields { display: inline-flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; padding: 6px 10px; background: #f7fafc; border: 1px solid var(--line); border-radius: 6px; }
+.culvert-fields[hidden] { display: none; }
+.culvert-fields .small-input { width: 84px; }
 .caption-preview { font-style: italic; color: var(--muted); font-size: 0.85rem; margin-top: 8px; }
 footer { text-align: center; color: var(--muted); font-size: 0.8rem; padding: 24px; }
