@@ -3,6 +3,7 @@ import { buildSections } from "./model.js";
 import { renderChart } from "./chart.js";
 import { buildDocx } from "./docx.js";
 import { isAvailable as historyAvailable, listRuns, saveRun, deleteRun, clearRuns } from "./history.js";
+import { buildRunReport, reportFilename } from "./report.js";
 
 const $ = (id) => document.getElementById(id);
 const CANVAS_W = 1300, CANVAS_H = 772;
@@ -309,6 +310,23 @@ async function download() {
   setTimeout(() => URL.revokeObjectURL(url), 4000);
 }
 
+// ---------- diagnostic report (saved runs only) ----------
+function downloadReport(run) {
+  const text = buildRunReport(run, { now: new Date().toISOString() });
+  downloadText(reportFilename(run), text);
+  setMessages([{ type: "ok", text: "Diagnostic report downloaded — share the .txt to debug station matching." }]);
+}
+
+function downloadText(filename, text) {
+  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
 function pngBytes(canvas) {
   const dataUrl = canvas.toDataURL("image/png");
   const b64 = dataUrl.split(",")[1];
@@ -382,8 +400,10 @@ function renderHistory() {
         <div class="htitle">${escapeAttr(run.condition || "Saved inputs")}${count}</div>
         <div class="hsub">${escapeAttr(events)} — ${fmtDate(run.savedAt)}</div>
       </div>
+      <button class="mini report" title="Download a .txt diagnostic (inputs + station matching + warnings)">Report</button>
       <button class="mini load">Load</button>
       <button class="mini del">Delete</button>`;
+    li.querySelector(".report").addEventListener("click", () => downloadReport(run));
     li.querySelector(".load").addEventListener("click", () => loadRun(run));
     li.querySelector(".del").addEventListener("click", () => {
       if (window.confirm("Delete this saved run?")) { deleteRun(run.id); renderHistory(); }
