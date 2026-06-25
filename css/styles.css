@@ -111,5 +111,7 @@ button.mini { padding: 2px 8px; font-size: 0.8rem; background: #eef2f7; color: v
 .culvert-fields { display: inline-flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; padding: 6px 10px; background: #f7fafc; border: 1px solid var(--line); border-radius: 6px; }
 .culvert-fields[hidden] { display: none; }
 .culvert-fields .small-input { width: 84px; }
+.kf { display: contents; }            /* shape-specific field group; children flow into culvert-fields */
+.kf[hidden] { display: none; }
 .caption-preview { font-style: italic; color: var(--muted); font-size: 0.85rem; margin-top: 8px; }
 footer { text-align: center; color: var(--muted); font-size: 0.8rem; padding: 24px; }
