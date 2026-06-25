@@ -101,7 +101,7 @@ export function renderChart(ctx, W, H, section, optsIn = {}) {
     }
   const st = section.structure;
   if (st) {
-    const halfW = (st.width || 0) / 2;
+    const halfW = culvertHalfWidth(st);
     ymin = Math.min(ymin, st.bottom); ymax = Math.max(ymax, st.top);
     xmin = Math.min(xmin, st.x - halfW); xmax = Math.max(xmax, st.x + halfW);
   }
@@ -179,20 +179,20 @@ export function renderChart(ctx, W, H, section, optsIn = {}) {
     ctx.setLineDash([]);
   }
 
-  // culvert box (plain 4-sided outline, no fillets)
+  // culvert outline — box, arch (legs + curved crown), circle, or ellipse
   if (st) {
+    const k = st.kind || "box";
     ctx.strokeStyle = o.structureColor;
     ctx.lineWidth = Math.max(2, W / 600);
-    ctx.lineJoin = "miter";
-    const w = st.width || 0;
-    if (w > 0) {
-      const x0 = sx(st.x - w / 2), x1 = sx(st.x + w / 2);
-      const yb = sy(st.bottom), yt = sy(st.top);
-      ctx.beginPath();
-      ctx.rect(Math.min(x0, x1), Math.min(yb, yt), Math.abs(x1 - x0), Math.abs(yb - yt));
-      ctx.stroke();
+    ctx.lineJoin = k === "box" ? "miter" : "round";
+    if (k === "box" && (st.width || 0) <= 0) {
+      line(ctx, sx(st.x), sy(st.bottom), sx(st.x), sy(st.top));   // zero-width → centerline
     } else {
-      line(ctx, sx(st.x), sy(st.bottom), sx(st.x), sy(st.top));
+      const pts = culvertPoints(st);
+      ctx.beginPath();
+      pts.forEach((p, i) => (i ? ctx.lineTo(sx(p[0]), sy(p[1])) : ctx.moveTo(sx(p[0]), sy(p[1]))));
+      ctx.closePath();
+      ctx.stroke();
     }
   }
 
@@ -297,6 +297,34 @@ function drawLegend(ctx, series, o, geo, fontPx) {
 
 // helpers
 function line(ctx, x1, y1, x2, y2) { ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); }
+
+// Half horizontal extent of a culvert, by shape kind (for x-bounds).
+export function culvertHalfWidth(st) {
+  const k = st.kind || "box";
+  if (k === "arch") return (st.span || 0) / 2;
+  if (k === "circle") return (st.diameter || 0) / 2;
+  return (st.width || 0) / 2;                       // box, ellipse
+}
+// Closed culvert outline in MODEL coords (ft), anchored at center-x st.x and
+// invert st.bottom. Parametric shapes are sampled finely so curves stay smooth.
+// box/(unknown) → rectangle; arch → straight legs + elliptical crown;
+// circle/ellipse → full sampled ellipse.
+export function culvertPoints(st) {
+  const x = st.x, b = st.bottom, k = st.kind || "box";
+  if (k === "arch") {
+    const rx = (st.span || 0) / 2, leg = st.legHeight || 0, rise = st.rise || 0, springY = b + leg, pts = [[x - rx, b], [x - rx, springY]];
+    for (let i = 0; i <= 96; i++) { const t = Math.PI * (1 - i / 96); pts.push([x + rx * Math.cos(t), springY + rise * Math.sin(t)]); }
+    pts.push([x + rx, b]);
+    return pts;
+  }
+  if (k === "circle" || k === "ellipse") {
+    const rx = (k === "circle" ? st.diameter : st.width) / 2, ry = (k === "circle" ? st.diameter : st.height) / 2, cy = b + ry, pts = [];
+    for (let i = 0; i < 128; i++) { const t = (Math.PI * 2 * i) / 128; pts.push([x + rx * Math.cos(t), cy + ry * Math.sin(t)]); }
+    return pts;
+  }
+  const w = st.width || 0;                          // box
+  return [[x - w / 2, b], [x - w / 2, st.top], [x + w / 2, st.top], [x + w / 2, b]];
+}
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
   ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);

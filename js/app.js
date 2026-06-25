@@ -208,6 +208,7 @@ function renderResults(conditionLabel) {
     chipFor.set(card, chip);
 
     const st = sec.structure;
+    const curKind = st ? (st.kind || "box") : "";   // legacy box structures have no kind
     const tools = document.createElement("div");
     tools.className = "chart-tools";
     tools.innerHTML = `
@@ -218,8 +219,11 @@ function renderResults(conditionLabel) {
       <label>Y max <input type="number" step="0.5" class="ymax small-input" value="${sec.yOverride ? sec.yOverride.max : ""}" /></label>
       <label>Culvert
         <select class="stype">
-          <option value=""${sel("", st ? "Culvert" : "")}>None</option>
-          <option value="Culvert"${sel("Culvert", st ? "Culvert" : "")}>Add box</option>
+          <option value=""${sel("", curKind)}>None</option>
+          <option value="box"${sel("box", curKind)}>Box</option>
+          <option value="arch"${sel("arch", curKind)}>Arch</option>
+          <option value="circle"${sel("circle", curKind)}>Circular</option>
+          <option value="ellipse"${sel("ellipse", curKind)}>Ellipse</option>
         </select>
       </label>
       ${sec.outlierCount > 0 ? `<label class="chk trim-toggle" title="Remove disconnected extra-area points (SMS stray segments) from this section">
@@ -227,8 +231,14 @@ function renderResults(conditionLabel) {
       </label>` : ""}
       <span class="culvert-fields"${st ? "" : ' hidden'}>
         <label>Scour (ft) <input type="number" step="0.1" class="cscour small-input" value="${st ? st.scour : ""}" /></label>
-        <label>Box height (ft) <input type="number" step="0.1" class="cheight small-input" value="${st ? st.height : ""}" /></label>
-        <label>Width (ft) <input type="number" step="0.1" class="cwidth small-input" value="${st ? st.width : ""}" /></label>
+        <span class="kf kf-box"><label>Box height (ft) <input type="number" step="0.1" class="cheight small-input" value="${st && st.height != null ? st.height : ""}" /></label>
+          <label>Width (ft) <input type="number" step="0.1" class="cwidth small-input" value="${st && st.width != null ? st.width : ""}" /></label></span>
+        <span class="kf kf-arch"><label>Span (ft) <input type="number" step="0.1" class="cspan small-input" value="${st && st.span != null ? st.span : ""}" /></label>
+          <label>Leg height (ft) <input type="number" step="0.1" class="cleg small-input" value="${st && st.legHeight != null ? st.legHeight : ""}" /></label>
+          <label>Rise (ft) <input type="number" step="0.1" class="crise small-input" value="${st && st.rise != null ? st.rise : ""}" /></label></span>
+        <span class="kf kf-circle"><label>Diameter (ft) <input type="number" step="0.1" class="cdia small-input" value="${st && st.diameter != null ? st.diameter : ""}" /></label></span>
+        <span class="kf kf-ellipse"><label>Width (ft) <input type="number" step="0.1" class="cew small-input" value="${st && st.width != null ? st.width : ""}" /></label>
+          <label>Height (ft) <input type="number" step="0.1" class="ceh small-input" value="${st && st.height != null ? st.height : ""}" /></label></span>
         <label>Center X <input type="number" step="0.5" class="ccenter small-input" placeholder="thalweg" value="${st && st.center != null ? st.center : ""}" /></label>
         <label>Bed (ft) <input type="number" step="0.1" class="cbed small-input" value="${st ? st.bed : 2}" /></label>
       </span>`;
@@ -265,27 +275,41 @@ function renderResults(conditionLabel) {
 
     const stype = tools.querySelector(".stype");
     const fields = tools.querySelector(".culvert-fields");
-    const scourEl = tools.querySelector(".cscour"), heightEl = tools.querySelector(".cheight");
-    const widthEl = tools.querySelector(".cwidth"), centerEl = tools.querySelector(".ccenter"), bedEl = tools.querySelector(".cbed");
+    const scourEl = tools.querySelector(".cscour"), bedEl = tools.querySelector(".cbed"), centerEl = tools.querySelector(".ccenter");
+    const num = (s) => parseFloat(tools.querySelector(s).value);
     const thalwegX = sec.ground.dist[argmin(sec.ground.val)];
+    const showKindFields = (kind) => tools.querySelectorAll(".kf").forEach((el) => (el.hidden = !el.classList.contains(`kf-${kind}`)));
     const applyStruct = () => {
-      fields.hidden = stype.value !== "Culvert";
-      if (stype.value !== "Culvert") { sec.structure = null; draw(); return; }
-      const scour = parseFloat(scourEl.value), height = parseFloat(heightEl.value), width = parseFloat(widthEl.value);
-      let bed = parseFloat(bedEl.value); if (isNaN(bed)) bed = 2;
-      const centerRaw = parseFloat(centerEl.value);
-      const center = isNaN(centerRaw) ? null : centerRaw;
-      // Need scour + height + width to draw the box; otherwise wait for input.
-      if (isNaN(scour) || isNaN(height) || isNaN(width)) { sec.structure = null; draw(); return; }
+      const kind = stype.value;                              // "" | box | arch | circle | ellipse
+      fields.hidden = !kind;
+      showKindFields(kind);
+      if (!kind) { sec.structure = null; draw(); return; }
+      const scour = num(".cscour");
+      let bed = num(".cbed"); if (isNaN(bed)) bed = 2;
+      if (isNaN(scour)) { sec.structure = null; draw(); return; }
+      const centerRaw = num(".ccenter"), center = isNaN(centerRaw) ? null : centerRaw;
       const bottom = sec.groundMin - scour - bed;
-      sec.structure = {
-        type: "Culvert", scour, height, width, bed, center,
-        x: center == null ? thalwegX : center,
-        bottom, top: bottom + height,
-      };
+      const base = { type: "Culvert", kind, scour, bed, center, x: center == null ? thalwegX : center, bottom };
+      // Each shape needs its own dimensions; wait (clear) until they're all present.
+      let st2 = null;
+      if (kind === "box") {
+        const height = num(".cheight"), width = num(".cwidth");
+        if (!isNaN(height) && !isNaN(width)) st2 = { ...base, height, width, top: bottom + height };
+      } else if (kind === "arch") {
+        const span = num(".cspan"), rise = num(".crise"); let leg = num(".cleg"); if (isNaN(leg)) leg = 0;
+        if (!isNaN(span) && !isNaN(rise)) st2 = { ...base, span, legHeight: leg, rise, top: bottom + leg + rise };
+      } else if (kind === "circle") {
+        const diameter = num(".cdia");
+        if (!isNaN(diameter)) st2 = { ...base, diameter, top: bottom + diameter };
+      } else if (kind === "ellipse") {
+        const width = num(".cew"), height = num(".ceh");
+        if (!isNaN(width) && !isNaN(height)) st2 = { ...base, width, height, top: bottom + height };
+      }
+      sec.structure = st2;
       draw();
     };
-    [stype, scourEl, heightEl, widthEl, centerEl, bedEl].forEach((el) => el.addEventListener("input", applyStruct));
+    showKindFields(curKind);
+    [stype, ...tools.querySelectorAll(".culvert-fields input")].forEach((el) => el.addEventListener("input", applyStruct));
 
     // optional per-chart trim of disconnected "extra area" points (user-driven)
     const trimEl = tools.querySelector(".ctrim");

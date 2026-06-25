@@ -19,7 +19,7 @@
 9. [Module reference](#9-module-reference)
 10. [Core data model](#10-core-data-model)
 11. [Chart rendering specification](#11-chart-rendering-specification)
-12. [Culvert box geometry](#12-culvert-box-geometry)
+12. [Culvert geometry](#12-culvert-geometry)
 13. [Word document generation](#13-word-document-generation)
 14. [Run history (localStorage)](#14-run-history-localstorage)
 15. [UI reference](#15-ui-reference)
@@ -417,13 +417,24 @@ test/*.mjs        Node test suites (see §17)
 ```js
 {
   type: "Culvert",
-  scour: 4.0, height: 15.2, width: 12.0, bed: 2.0,
+  kind: "box",     // "box" | "arch" | "circle" | "ellipse"  (absent ⇒ box, legacy)
+  scour: 4.0, bed: 2.0,
   center: 26.0,    // user-set center X, or null = thalweg x
   x: 26.0,         // resolved center X
-  bottom: 59.25,   // = groundMin − scour − bed
-  top: 74.45,      // = bottom + height
+  bottom: 59.25,   // invert = groundMin − scour − bed
+  top: 74.45,      // crown elevation (used for the y-range)
+  // shape dimensions (only the active kind's fields are set):
+  width, height,   // box (and ellipse: horizontal/vertical axes)
+  span, legHeight, rise,  // arch: width, straight-leg height, curved-crown rise
+  diameter,        // circle
 }
 ```
+All shapes anchor at the same center-X and invert. `chart.js` renders the outline
+via `culvertPoints(st)`: box → rectangle; **arch** → straight legs of `legHeight`
+then a smooth elliptical crown of `rise` (sampled finely, so no faceting);
+circle/ellipse → a sampled ellipse. Curves share the section's (vertically
+exaggerated) coordinate system, so a round pipe appears as the chart's aspect
+ratio shows it — consistent with the ground/water lines.
 
 ### History "run" object
 ```js
@@ -444,7 +455,7 @@ test/*.mjs        Node test suites (see §17)
 
 `renderChart(ctx, W, H, section, opts)` draws (in order): white background →
 minor gridlines (light) → major gridlines → earth fill → inundation shading →
-series lines → culvert box → thalweg marker → axis frame + ticks + titles →
+series lines → culvert outline → thalweg marker → axis frame + ticks + titles →
 "looking downstream" note → legend.
 
 - **Canvas size**: rendered at `1300 × 772` px (≈ 200 dpi for a 6.5 × 3.86 in
@@ -472,34 +483,50 @@ series lines → culvert box → thalweg marker → axis frame + ticks + titles 
 
 ---
 
-## 12. Culvert box geometry
+## 12. Culvert geometry
 
-A **single-barrel** box culvert, drawn as a plain 4-sided outline (no fillets).
-Inputs and derivation (all in feet):
+A **single-barrel** culvert in one of four shapes — **Box**, **Arch**,
+**Circular**, **Ellipse** — selected from the Culvert dropdown. All share the
+same anchor (Scour / Bed / Center X) and differ only in their opening shape.
+Common inputs and derivation (all in feet):
 
 | Input | Meaning | Default |
 |---|---|---|
 | **Scour** | depth bed could erode (designer's calc) | — |
-| **Box height** | culvert opening height | — |
-| **Width** | culvert opening width | — |
-| **Center X** | horizontal position of box center | thalweg x |
+| **Center X** | horizontal position of the shape center | thalweg x |
 | **Bed** | material allowance below scour | 2 ft (editable) |
 
-Derived geometry:
+Per-shape dimension inputs:
+
+| Shape | Inputs |
+|---|---|
+| **Box** | Box height, Width |
+| **Arch** | Span (width), Leg height (straight vertical walls), Rise (curved crown) |
+| **Circular** | Diameter |
+| **Ellipse** | Width, Height |
+
+Derived geometry (all anchored at the invert):
 ```
-box bottom = thalweg − scour − bed
-box top    = box bottom + height
-box spans  = centerX − width/2  …  centerX + width/2
+invert (bottom) = thalweg − scour − bed
+crown  (top)    = bottom + {height | legHeight+rise | diameter | height}
+horizontal span = centerX ± halfWidth   (width/2, span/2, or diameter/2)
 ```
-- **Vertical** is anchored to the **thalweg elevation** (scour is defined as
-  measured down from the thalweg), so a meandering thalweg does not break it.
-- **Horizontal** defaults to the thalweg's x-location but is overridable via
-  Center X, because the culvert is not always at the section's low point.
-- The box is added to the **legend** ("Culvert") and to the **axis extents** so
-  it never clips, even when `box bottom` is well below grade.
+- **Vertical** is anchored to the **thalweg elevation** (scour is measured down
+  from the thalweg), so a meandering thalweg does not break it.
+- **Horizontal** defaults to the thalweg's x-location, overridable via Center X.
+- **Arch** = straight legs of `legHeight` then an elliptical crown of `rise`
+  (`legHeight = 0` ⇒ springs from the invert; `rise = span/2` ⇒ semicircular
+  crown). Drawn as a finely-sampled polyline, so curves stay smooth, not faceted.
+- Circle/ellipse render in the section's (vertically exaggerated) coordinate
+  system, so a true-round pipe appears with the chart's aspect ratio — consistent
+  with the ground and water-surface lines.
+- The shape is added to the **legend** ("Culvert") and to the **axis extents** so
+  it never clips, even when the invert is well below grade.
+- A structure with no `kind` (legacy saves) is treated as a **Box**.
 
 Implementation: input handling in `js/app.js` (`applyStruct` inside
-`renderResults`); drawing + extents in `js/chart.js`.
+`renderResults`); shape points (`culvertPoints`), horizontal extent
+(`culvertHalfWidth`), drawing + extents in `js/chart.js`.
 
 ---
 
