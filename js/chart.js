@@ -43,6 +43,20 @@ export function surfaceColor(name, i, n) {
   return { color: rampColor(i, n), dash: null };
 }
 
+// Named line styles → dash patterns (px on/off). Solid = no dash. Used by the
+// per-event style picker so close flows can be told apart by line type.
+export const LINE_STYLES = {
+  solid: [], dashed: [10, 6], longDash: [20, 9], dashDot: [13, 6, 3, 6], dotted: [2, 6],
+};
+// Apply a user override { color?, style? } on top of the default ramp color/dash.
+function applyStyle(base, ov) {
+  if (!ov) return base;
+  return {
+    color: ov.color || base.color,
+    dash: ov.style ? (LINE_STYLES[ov.style] || base.dash) : base.dash,
+  };
+}
+
 function niceNum(range, round) {
   const exp = Math.floor(Math.log10(range));
   const frac = range / Math.pow(10, exp);
@@ -88,7 +102,7 @@ export function renderChart(ctx, W, H, section, optsIn = {}) {
       name: s.name,
       dist: s.dist,
       val: s.val,
-      ...surfaceColor(s.name, i, section.surfaces.length),
+      ...applyStyle(surfaceColor(s.name, i, section.surfaces.length), o.styles && o.styles[s.name]),
     })),
   ];
 

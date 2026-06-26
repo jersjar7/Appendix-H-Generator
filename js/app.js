@@ -1,6 +1,6 @@
 import { parseProfile, parseSummary, formatStation } from "./parse.js";
 import { buildSections } from "./model.js";
-import { renderChart } from "./chart.js";
+import { renderChart, surfaceColor, LINE_STYLES } from "./chart.js";
 import { buildDocx } from "./docx.js";
 import { isAvailable as historyAvailable, listRuns, saveRun, deleteRun, clearRuns } from "./history.js";
 import { buildRunReport, reportFilename } from "./report.js";
@@ -15,7 +15,16 @@ const PRESETS = {
   proposed: ["2-year", "100-year", "500-year", "2080 100-year"],
 };
 
-let state = { sections: [], canvases: [], order: "asc" };
+let state = { sections: [], canvases: [], order: "asc", styles: {} };
+
+// Named line styles for the per-event picker (label → key matches chart.js LINE_STYLES).
+const STYLE_OPTIONS = [["solid", "Solid"], ["dashed", "Dashed"], ["longDash", "Long dash"], ["dashDot", "Dash-dot"], ["dotted", "Dotted"]];
+const rgbToHex = (c) => {
+  if (!c) return "#000000";
+  if (c[0] === "#") return c;
+  const m = c.match(/\d+/g) || [0, 0, 0];
+  return "#" + m.slice(0, 3).map((n) => (+n).toString(16).padStart(2, "0")).join("");
+};
 
 // Numeric sort key from a station: prefer the matched value, else parse "10+47".
 function stationKey(sec) {
@@ -119,6 +128,7 @@ function currentInputs() {
       optWater: $("optWater").checked,
       optThalweg: $("optThalweg").checked,
       optLegend: $("optLegend").checked,
+      styles: state.styles,
     },
   };
 }
@@ -140,6 +150,7 @@ function chartOptions() {
     showInundation: $("optWater").checked,
     showThalweg: $("optThalweg").checked,
     legendInside: $("optLegend").checked,
+    styles: state.styles,
   };
 }
 
@@ -165,6 +176,8 @@ function renderResults(conditionLabel) {
   const chips = document.createElement("div");
   chips.className = "station-nav";
   nav.appendChild(chips);
+  const stylePanel = buildStylePanel();
+  if (stylePanel) nav.appendChild(stylePanel);
   wrap.appendChild(nav);
 
   // horizontal slider of charts
@@ -334,6 +347,44 @@ function renderResults(conditionLabel) {
 // redraw all when global options change
 function redrawAll() { state.canvases.forEach((c) => c.redraw()); }
 
+// Per-event line styling: color + line type for each water-surface profile,
+// applied consistently across every section chart (and its legend). Lets close
+// flows (e.g. 42 vs 43 CFS) be told apart by contrasting color AND line type.
+function buildStylePanel() {
+  const sample = state.sections[0];
+  if (!sample || !sample.surfaces || !sample.surfaces.length) return null;
+  const n = sample.surfaces.length;
+  const wrap = document.createElement("details");
+  wrap.className = "style-panel";
+  wrap.open = false;
+  let rows = "";
+  sample.surfaces.forEach((s, i) => {
+    const def = surfaceColor(s.name, i, n);                       // ramp default
+    const cur = state.styles[s.name] || {};
+    const color = rgbToHex(cur.color || def.color);
+    const style = cur.style || (def.dash ? "dashed" : "solid");   // reflect default 2080 dash
+    rows += `<div class="style-row" data-name="${escapeAttr(s.name)}">
+      <input type="color" class="ls-color" value="${color}" title="Line color" />
+      <span class="ls-name">${escapeHtml(s.name)}</span>
+      <select class="ls-style" title="Line type">
+        ${STYLE_OPTIONS.map(([k, label]) => `<option value="${k}"${k === style ? " selected" : ""}>${label}</option>`).join("")}
+      </select>
+    </div>`;
+  });
+  wrap.innerHTML = `<summary>Line styles <span class="muted">— color &amp; line type per flow</span></summary>
+    <div class="style-rows">${rows}</div>`;
+  wrap.querySelectorAll(".style-row").forEach((row) => {
+    const name = row.dataset.name;
+    row.querySelector(".ls-color").addEventListener("input", (e) => setStyle(name, { color: e.target.value }));
+    row.querySelector(".ls-style").addEventListener("change", (e) => setStyle(name, { style: e.target.value }));
+  });
+  return wrap;
+}
+function setStyle(name, patch) {
+  state.styles[name] = { ...(state.styles[name] || {}), ...patch };
+  redrawAll();
+}
+
 // ---------- download ----------
 async function download() {
   if (!state.sections.length) return;
@@ -382,6 +433,7 @@ function pngBytes(canvas) {
 // ---------- helpers ----------
 function argmin(a) { let k = 0; for (let i = 1; i < a.length; i++) if (a[i] < a[k]) k = i; return k; }
 function escapeAttr(s) { return String(s).replace(/"/g, "&quot;").replace(/</g, "&lt;"); }
+function escapeHtml(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 
 // auto-count hint as the user types
 function updateAutoCount() {
@@ -406,7 +458,7 @@ function restart() {
   $("summary").value = "";
   $("profile").value = "";
   ["optEarth", "optWater", "optThalweg", "optLegend"].forEach((id) => ($(id).checked = true));
-  state = { sections: [], canvases: [], order: "asc" };
+  state = { sections: [], canvases: [], order: "asc", styles: {} };
   $("results").innerHTML = "";
   $("messages").innerHTML = "";
   $("autoCount").textContent = "";
@@ -467,6 +519,7 @@ function loadRun(run) {
   $("optWater").checked = o.optWater !== false;
   $("optThalweg").checked = o.optThalweg !== false;
   $("optLegend").checked = o.optLegend !== false;
+  state.styles = o.styles && typeof o.styles === "object" ? { ...o.styles } : {};
   updateAutoCount();
   // refill the inputs only — let the user review, then click Generate.
   $("historyPanel").open = false;
