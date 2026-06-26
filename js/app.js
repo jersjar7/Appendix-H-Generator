@@ -15,7 +15,7 @@ const PRESETS = {
   proposed: ["2-year", "100-year", "500-year", "2080 100-year"],
 };
 
-let state = { sections: [], canvases: [], order: "asc", styles: { sections: {}, long: {} }, longitudinal: null, view: "sections", legend: { anchor: "right-middle", offX: 0, offY: 0 }, markerLabels: "auto" };
+let state = { sections: [], canvases: [], order: "asc", styles: { sections: {}, long: {} }, longitudinal: null, view: "sections", legend: { anchor: "right-middle", offX: 0, offY: 0 }, markerLabels: "auto", markerOverrides: {} };
 const LEGEND_POSITIONS = [["right-middle", "Right (middle)"], ["top-right", "Top-right"], ["bottom-right", "Bottom-right"], ["top-left", "Top-left"], ["bottom-left", "Bottom-left"], ["top-center", "Top-center"], ["bottom-center", "Bottom-center"], ["left-middle", "Left (middle)"]];
 const LEGEND_NUDGE = 24;   // canvas px per Move click
 
@@ -141,6 +141,7 @@ function currentInputs() {
       styles: state.styles,
       legend: { ...state.legend },
       markerLabels: state.markerLabels,
+      markerOverrides: { ...state.markerOverrides },
     },
   };
 }
@@ -404,14 +405,23 @@ function longitudinalOptions() {
     stationStart,
     markers: longitudinalMarkers(stationStart),
     markerLabels: state.markerLabels,
+    markerOverrides: state.markerOverrides,
     styles: state.styles.long,
   };
 }
 
-let longCanvas = null;
+let longCanvas = null, longMarkerBoxes = [];
 function drawLongitudinal() {
   if (!longCanvas || !state.longitudinal) return;
-  renderChart(longCanvas.getContext("2d"), longCanvas.width, longCanvas.height, state.longitudinal, longitudinalOptions());
+  const out = renderChart(longCanvas.getContext("2d"), longCanvas.width, longCanvas.height, state.longitudinal, longitudinalOptions());
+  longMarkerBoxes = (out && out.markerBoxes) || [];
+}
+// map a pointer event on the (CSS-scaled) canvas to the marker label box under it
+function markerBoxAt(e) {
+  const rect = longCanvas.getBoundingClientRect();
+  const x = (e.clientX - rect.left) * (longCanvas.width / rect.width);
+  const y = (e.clientY - rect.top) * (longCanvas.height / rect.height);
+  return longMarkerBoxes.find((b) => x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h);
 }
 
 function renderLongitudinal() {
@@ -426,8 +436,20 @@ function renderLongitudinal() {
   const W = 1700, H = Math.round((CANVAS_H / CANVAS_W) * W * 0.82);
   longCanvas = document.createElement("canvas");
   longCanvas.width = W; longCanvas.height = H;
-  longCanvas.className = "chart-canvas";
+  longCanvas.className = "chart-canvas long-canvas";
+  longCanvas.title = "Click a station label to flip it top ↔ bottom";
+  longCanvas.addEventListener("click", (e) => {
+    const box = markerBoxAt(e);
+    if (!box) return;
+    state.markerOverrides = { ...state.markerOverrides, [box.label]: box.side === "top" ? "bottom" : "top" };
+    drawLongitudinal();
+  });
+  longCanvas.addEventListener("mousemove", (e) => { longCanvas.style.cursor = markerBoxAt(e) ? "pointer" : "default"; });
   card.appendChild(longCanvas);
+  const card_hint = document.createElement("p");
+  card_hint.className = "hint tiny long-hint";
+  card_hint.innerHTML = "Tip: click any <strong>station label</strong> on the figure to flip it between top and bottom.";
+  card.appendChild(card_hint);
   const actions = document.createElement("div");
   actions.className = "long-actions";
   actions.innerHTML = `
@@ -444,7 +466,7 @@ function renderLongitudinal() {
       <button class="ghost small" data-d="R" title="Right">▶</button>
       <button class="ghost small" data-d="0" title="Reset position">reset</button>
     </span>`;
-  actions.querySelector(".mark-pos").addEventListener("change", (e) => { state.markerLabels = e.target.value; drawLongitudinal(); });
+  actions.querySelector(".mark-pos").addEventListener("change", (e) => { state.markerLabels = e.target.value; state.markerOverrides = {}; drawLongitudinal(); });
   actions.querySelector(".leg-pos").addEventListener("change", (e) => { state.legend.anchor = e.target.value; drawLongitudinal(); });
   actions.querySelectorAll(".leg-nudge button").forEach((b) => b.addEventListener("click", () => {
     const d = b.dataset.d;
@@ -620,7 +642,7 @@ function restart() {
   $("profile").value = "";
   ["optEarth", "optWater", "optThalweg", "optLegend", "loptEarth"].forEach((id) => ($(id).checked = true));
   $("loptWater").checked = false;
-  state = { sections: [], canvases: [], order: "asc", styles: { sections: {}, long: {} }, longitudinal: null, view: "sections", legend: { anchor: "right-middle", offX: 0, offY: 0 }, markerLabels: "auto" };
+  state = { sections: [], canvases: [], order: "asc", styles: { sections: {}, long: {} }, longitudinal: null, view: "sections", legend: { anchor: "right-middle", offX: 0, offY: 0 }, markerLabels: "auto", markerOverrides: {} };
   $("results").innerHTML = "";
   $("longitudinalPaste").value = ""; $("stationStart").value = "";
   refreshStylePanel("sections"); refreshStylePanel("long");
@@ -696,6 +718,7 @@ function loadRun(run) {
   state.styles = (s.sections || s.long) ? { sections: { ...(s.sections || {}) }, long: { ...(s.long || {}) } } : { sections: { ...s }, long: {} };
   if (o.legend && typeof o.legend === "object") state.legend = { anchor: "right-middle", offX: 0, offY: 0, ...o.legend };
   if (o.markerLabels) state.markerLabels = o.markerLabels;
+  state.markerOverrides = o.markerOverrides && typeof o.markerOverrides === "object" ? { ...o.markerOverrides } : {};
   updateAutoCount();
   // refill the inputs only — let the user review, then click Generate.
   $("historyPanel").open = false;
