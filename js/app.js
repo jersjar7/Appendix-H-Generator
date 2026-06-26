@@ -1,6 +1,6 @@
 import { parseProfile, parseSummary, formatStation } from "./parse.js";
 import { buildSections } from "./model.js";
-import { renderChart, surfaceColor, LINE_STYLES } from "./chart.js";
+import { renderChart, surfaceColor, DEFAULTS, DEFAULT_WIDTHS } from "./chart.js";
 import { buildDocx } from "./docx.js";
 import { isAvailable as historyAvailable, listRuns, saveRun, deleteRun, clearRuns } from "./history.js";
 import { buildRunReport, reportFilename } from "./report.js";
@@ -347,41 +347,59 @@ function renderResults(conditionLabel) {
 // redraw all when global options change
 function redrawAll() { state.canvases.forEach((c) => c.redraw()); }
 
-// Per-event line styling: color + line type for each water-surface profile,
-// applied consistently across every section chart (and its legend). Lets close
-// flows (e.g. 42 vs 43 CFS) be told apart by contrasting color AND line type.
-function buildStylePanel() {
+// Every line on the plot — ground, each water-surface flow, and the culvert — is
+// fully customizable: color + line type + thickness. Applied consistently across
+// every section chart and its legend. Lets close flows (e.g. 42 vs 43 CFS) be told
+// apart by contrasting color, line type, AND weight.
+function lineDescriptors() {
   const sample = state.sections[0];
-  if (!sample || !sample.surfaces || !sample.surfaces.length) return null;
+  if (!sample) return [];
+  const out = [{ key: "__ground__", label: sample.ground.name || "Ground", defColor: DEFAULTS.groundColor, defStyle: "solid", defWidth: DEFAULT_WIDTHS.ground }];
   const n = sample.surfaces.length;
+  sample.surfaces.forEach((s, i) => {
+    const def = surfaceColor(s.name, i, n);
+    out.push({ key: s.name, label: s.name, defColor: def.color, defStyle: def.dash ? "dashed" : "solid", defWidth: DEFAULT_WIDTHS.surface });
+  });
+  if (state.sections.some((sec) => sec.structure)) {
+    out.push({ key: "__culvert__", label: "Culvert", defColor: DEFAULTS.structureColor, defStyle: "solid", defWidth: DEFAULT_WIDTHS.culvert });
+  }
+  return out;
+}
+function buildStylePanel() {
+  const lines = lineDescriptors();
+  if (!lines.length) return null;
   const wrap = document.createElement("details");
   wrap.className = "style-panel";
   wrap.open = false;
-  let rows = "";
-  sample.surfaces.forEach((s, i) => {
-    const def = surfaceColor(s.name, i, n);                       // ramp default
-    const cur = state.styles[s.name] || {};
-    const color = rgbToHex(cur.color || def.color);
-    const style = cur.style || (def.dash ? "dashed" : "solid");   // reflect default 2080 dash
-    rows += `<div class="style-row" data-name="${escapeAttr(s.name)}">
+  const rows = lines.map((ln) => {
+    const cur = state.styles[ln.key] || {};
+    const color = rgbToHex(cur.color || ln.defColor);
+    const style = cur.style || ln.defStyle;
+    const width = cur.width != null ? cur.width : ln.defWidth;
+    return `<div class="style-row" data-key="${escapeAttr(ln.key)}">
       <input type="color" class="ls-color" value="${color}" title="Line color" />
-      <span class="ls-name">${escapeHtml(s.name)}</span>
+      <span class="ls-name">${escapeHtml(ln.label)}</span>
       <select class="ls-style" title="Line type">
         ${STYLE_OPTIONS.map(([k, label]) => `<option value="${k}"${k === style ? " selected" : ""}>${label}</option>`).join("")}
       </select>
+      <label class="ls-wlabel">w<input type="number" class="ls-width" min="0.5" max="8" step="0.5" value="${width}" title="Line thickness" /></label>
     </div>`;
-  });
-  wrap.innerHTML = `<summary>Line styles <span class="muted">— color &amp; line type per flow</span></summary>
+  }).join("");
+  wrap.innerHTML = `<summary>Line styles <span class="muted">— color, line type &amp; thickness per line</span></summary>
     <div class="style-rows">${rows}</div>`;
   wrap.querySelectorAll(".style-row").forEach((row) => {
-    const name = row.dataset.name;
-    row.querySelector(".ls-color").addEventListener("input", (e) => setStyle(name, { color: e.target.value }));
-    row.querySelector(".ls-style").addEventListener("change", (e) => setStyle(name, { style: e.target.value }));
+    const key = row.dataset.key;
+    row.querySelector(".ls-color").addEventListener("input", (e) => setStyle(key, { color: e.target.value }));
+    row.querySelector(".ls-style").addEventListener("change", (e) => setStyle(key, { style: e.target.value }));
+    row.querySelector(".ls-width").addEventListener("input", (e) => {
+      const w = parseFloat(e.target.value);
+      setStyle(key, { width: isNaN(w) ? undefined : w });
+    });
   });
   return wrap;
 }
-function setStyle(name, patch) {
-  state.styles[name] = { ...(state.styles[name] || {}), ...patch };
+function setStyle(key, patch) {
+  state.styles[key] = { ...(state.styles[key] || {}), ...patch };
   redrawAll();
 }
 

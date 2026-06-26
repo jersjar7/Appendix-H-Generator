@@ -44,16 +44,21 @@ export function surfaceColor(name, i, n) {
 }
 
 // Named line styles → dash patterns (px on/off). Solid = no dash. Used by the
-// per-event style picker so close flows can be told apart by line type.
+// per-line style picker so close flows can be told apart by line type.
 export const LINE_STYLES = {
   solid: [], dashed: [10, 6], longDash: [20, 9], dashDot: [13, 6, 3, 6], dotted: [2, 6],
 };
-// Apply a user override { color?, style? } on top of the default ramp color/dash.
+// Default line weight (px at the reference render width) per line role.
+export const DEFAULT_WIDTHS = { ground: 2.6, surface: 1.7, culvert: 2.2 };
+const REF_W = 1300;
+// A weight is resolution-independent: it equals px at REF_W and scales with W.
+export const lineWidthPx = (W, weight) => Math.max(0.4, (weight * W) / REF_W);
+// Apply a user override { color?, style?, width? } on top of a line's defaults.
 function applyStyle(base, ov) {
-  if (!ov) return base;
   return {
-    color: ov.color || base.color,
-    dash: ov.style ? (LINE_STYLES[ov.style] || base.dash) : base.dash,
+    color: (ov && ov.color) || base.color,
+    dash: ov && ov.style ? (LINE_STYLES[ov.style] || base.dash) : base.dash,
+    width: ov && ov.width != null ? ov.width : base.width,
   };
 }
 
@@ -97,12 +102,15 @@ export function renderChart(ctx, W, H, section, optsIn = {}) {
   ctx.fillRect(0, 0, W, H);
 
   const series = [
-    { name: section.ground.name, dist: section.ground.dist, val: section.ground.val, ground: true },
+    {
+      name: section.ground.name, dist: section.ground.dist, val: section.ground.val, ground: true,
+      ...applyStyle({ color: o.groundColor, dash: null, width: DEFAULT_WIDTHS.ground }, o.styles && o.styles.__ground__),
+    },
     ...section.surfaces.map((s, i) => ({
       name: s.name,
       dist: s.dist,
       val: s.val,
-      ...applyStyle(surfaceColor(s.name, i, section.surfaces.length), o.styles && o.styles[s.name]),
+      ...applyStyle({ ...surfaceColor(s.name, i, section.surfaces.length), width: DEFAULT_WIDTHS.surface }, o.styles && o.styles[s.name]),
     })),
   ];
 
@@ -183,8 +191,8 @@ export function renderChart(ctx, W, H, section, optsIn = {}) {
 
   // series lines
   for (const s of series) {
-    ctx.strokeStyle = s.ground ? o.groundColor : s.color;
-    ctx.lineWidth = s.ground ? Math.max(2.2, W / 500) : Math.max(1.4, W / 760);
+    ctx.strokeStyle = s.color;
+    ctx.lineWidth = lineWidthPx(W, s.width);
     ctx.lineJoin = "round";
     ctx.setLineDash(s.dash || []);
     ctx.beginPath();
@@ -194,11 +202,13 @@ export function renderChart(ctx, W, H, section, optsIn = {}) {
   }
 
   // culvert outline — box, arch (legs + curved crown), circle, or ellipse
+  const culvertStyle = applyStyle({ color: o.structureColor, dash: null, width: DEFAULT_WIDTHS.culvert }, o.styles && o.styles.__culvert__);
   if (st) {
     const k = st.kind || "box";
-    ctx.strokeStyle = o.structureColor;
-    ctx.lineWidth = Math.max(2, W / 600);
+    ctx.strokeStyle = culvertStyle.color;
+    ctx.lineWidth = lineWidthPx(W, culvertStyle.width);
     ctx.lineJoin = k === "box" ? "miter" : "round";
+    ctx.setLineDash(culvertStyle.dash || []);
     if (k === "box" && (st.width || 0) <= 0) {
       line(ctx, sx(st.x), sy(st.bottom), sx(st.x), sy(st.top));   // zero-width → centerline
     } else {
@@ -208,6 +218,7 @@ export function renderChart(ctx, W, H, section, optsIn = {}) {
       ctx.closePath();
       ctx.stroke();
     }
+    ctx.setLineDash([]);
   }
 
   // thalweg marker
@@ -245,7 +256,7 @@ export function renderChart(ctx, W, H, section, optsIn = {}) {
   drawNote(ctx, o.note, pL + 8, pT + pH - 8, fontPx);
 
   // legend (smart inside placement, or fixed top-right)
-  const legendItems = st ? series.concat([{ name: "Culvert", color: o.structureColor }]) : series;
+  const legendItems = st ? series.concat([{ name: "Culvert", ...culvertStyle }]) : series;
   drawLegend(ctx, legendItems, o, { pL, pT, pW, pH, sx, sy }, fontPx);
 
   ctx.restore();
@@ -299,8 +310,8 @@ function drawLegend(ctx, series, o, geo, fontPx) {
   ctx.textAlign = "left"; ctx.textBaseline = "middle";
   series.forEach((s, i) => {
     const cy = by + 6 + rowH * i + rowH / 2;
-    ctx.strokeStyle = s.ground ? o.groundColor : s.color;
-    ctx.lineWidth = s.ground ? 3 : 2;
+    ctx.strokeStyle = s.color || o.groundColor;
+    ctx.lineWidth = Math.max(1.2, Math.min(5, s.width || 2));   // legend reflects relative thickness
     ctx.setLineDash(s.dash || []);
     line(ctx, bx + 10, cy, bx + 10 + swatch, cy);
     ctx.setLineDash([]);
