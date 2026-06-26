@@ -392,7 +392,7 @@ function longitudinalOptions() {
   return {
     ...base,
     xTitle: "Station (feet)",
-    note: "Profile along centerline, looking downstream",
+    note: "",                // self-evident on a longitudinal profile; frees space for X-section labels
     stationStart,
     markers: longitudinalMarkers(stationStart),
     showInundation: false,   // gappy WSE under structures → off for the reach view

@@ -280,8 +280,8 @@ export function renderChart(ctx, W, H, section, optsIn = {}) {
   ctx.textBaseline = "top"; ctx.fillText(o.yTitle, 0, 0);
   ctx.restore();
 
-  // note box (bottom-left, inside plot)
-  drawNote(ctx, o.note, pL + 8, pT + pH - 8, fontPx);
+  // note box (bottom-left, inside plot) — skip when empty (e.g. longitudinal)
+  if (o.note) drawNote(ctx, o.note, pL + 8, pT + pH - 8, fontPx);
 
   // legend (smart inside placement, or fixed top-right)
   const legendItems = st ? series.concat([{ name: "Culvert", ...culvertStyle }]) : series;
