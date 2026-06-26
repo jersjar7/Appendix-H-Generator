@@ -463,13 +463,18 @@ series lines → culvert outline → thalweg marker → axis frame + ticks + tit
 - **Ground**: warm brown `#7a5c3e`, ~2.6 px line, with a light **earth fill**
   (`#ece0cf`) below.
 - **Water surfaces**: blue→green ramp (`#1f6fb4 → #56a0d3 → #3a9d4a`); any event
-  named with `2080` is **dashed amber** `#e8a93b`. These are **defaults** — the
-  **Line styles** panel (above the charts) overrides the color and line type
-  (solid / dashed / long-dash / dash-dot / dotted) **per event**, applied across
-  every section chart and its legend. Overrides live in `state.styles` (keyed by
-  event name), flow through `chartOptions().styles`, and are saved with history.
-  Use it to separate near-identical flows (e.g. 42 vs 43 CFS) by color *and*
-  line type. Dash patterns: `LINE_STYLES` in `js/chart.js`.
+  named with `2080` is **dashed amber** `#e8a93b`.
+- These are **defaults** — the **Line styles** panel (above the charts) makes
+  **every line** fully customizable: **color + line type + thickness** for the
+  **ground**, **each water-surface flow**, and the **culvert** outline. Applied
+  across every section chart and its legend (the legend reflects each line's
+  color, dash, and relative weight). Overrides live in `state.styles` keyed by
+  `__ground__`, the event name, or `__culvert__`; flow through
+  `chartOptions().styles`; and are saved with history. Use it to separate
+  near-identical flows (e.g. 42 vs 43 CFS) by color, line type, *and* weight.
+  Dash patterns: `LINE_STYLES`; default weights: `DEFAULT_WIDTHS`; a weight equals
+  px at the 1300-px reference render and scales with resolution (`lineWidthPx`) —
+  all in `js/chart.js`.
 - **Inundation shading**: light blue (`#bcd6ef`, 60% alpha) between the ground
   and the highest surface.
 - **Culvert**: black `#000000`, 4-sided rectangle (§12).

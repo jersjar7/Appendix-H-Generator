@@ -104,6 +104,8 @@ button.mini { padding: 2px 8px; font-size: 0.8rem; background: #eef2f7; color: v
 .style-row .ls-color { width: 28px; height: 24px; padding: 0; flex: none; }
 .style-row .ls-name { font-size: 0.82rem; min-width: 64px; }
 .style-row .ls-style { font-size: 0.8rem; padding: 4px 6px; }
+.style-row .ls-wlabel { display: inline-flex; align-items: center; gap: 3px; font-size: 0.78rem; color: var(--muted); margin: 0; }
+.style-row .ls-width { width: 56px; font-size: 0.8rem; padding: 4px 6px; }
 .chip { background: #eef2f7; color: var(--accent-d); border: 1px solid var(--line); border-radius: 999px; padding: 5px 13px; font-size: 0.82rem; font-weight: 600; cursor: pointer; }
 .chip:hover { background: #e2e8f0; }
 .chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
