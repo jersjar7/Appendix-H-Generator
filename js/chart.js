@@ -318,7 +318,9 @@ function drawLegend(ctx, series, o, geo, fontPx) {
     [pL + (pW - boxW) / 2, pT + 8], // top-center
   ];
   let best = candidates[0], bestScore = Infinity;
-  if (o.legendInside) {
+  if (o.legendAnchor === "right-middle") {
+    best = [pL + pW - boxW - 10, pT + (pH - boxH) / 2];   // mid-height, right edge (longitudinal)
+  } else if (o.legendInside) {
     for (const [bx, by] of candidates) {
       let score = 0;
       for (const s of series) {
