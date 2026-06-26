@@ -107,6 +107,36 @@ export function buildSections(pairs, summaryRows, opts) {
   return { sections, warnings, datasetsPerSection: dps, eventNames };
 }
 
+// Build a single longitudinal profile section from the same columnar paste (one
+// reach along the stream centerline, not many cross sections). Mirrors the cross-
+// section classification: ground = the dataset with the lowest minimum (channel
+// bed); the rest are water surfaces ranked ascending by mean elevation and named
+// from the events list (so column order / extra Proposed floods don't matter).
+// Tolerates null gaps (dry reaches under a culvert) kept by parseProfile keepGaps.
+export function buildLongitudinal(pairs, opts = {}) {
+  const valid = (a) => a.filter((v) => v != null && Number.isFinite(v));
+  if (pairs.length < 2) throw new Error("Need at least a ground line and one water surface.");
+  let gi = 0;
+  for (let i = 1; i < pairs.length; i++) {
+    if (min(valid(pairs[i].val)) < min(valid(pairs[gi].val))) gi = i;
+  }
+  const ground = pairs[gi];
+  const events = opts.events && opts.events.length ? opts.events : [];
+  const surfaces = pairs
+    .filter((_, i) => i !== gi)
+    .map((d) => ({ d, key: mean(valid(d.val)) }))
+    .sort((a, b) => a.key - b.key)
+    .map((s, i) => ({ name: events[i] || `Event ${i + 1}`, dist: s.d.dist, val: s.d.val }));
+  const groundWord = (opts.conditionLabel || "").replace(/\s*conditions?\s*/i, " ").trim();
+  const groundLabel = (groundWord ? groundWord + " " : "") + "Ground";
+  return {
+    ground: { name: groundLabel, dist: ground.dist, val: ground.val },
+    groundMin: min(valid(ground.val)),
+    surfaces,
+    longitudinal: true,
+  };
+}
+
 // Elevation rank of a section: its thalweg (channel bed minimum). The channel
 // bed rises monotonically with stationing going upstream, so the thalweg is the
 // quantity that tracks station order. (The reference Excel ranks by "avg water

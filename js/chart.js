@@ -114,12 +114,13 @@ export function renderChart(ctx, W, H, section, optsIn = {}) {
     })),
   ];
 
-  // data bounds
+  // data bounds (null vals = gaps, e.g. a dry reach under a culvert — skip them)
   let xmin = Infinity, xmax = -Infinity, ymin = Infinity, ymax = -Infinity;
   for (const s of series)
     for (let i = 0; i < s.dist.length; i++) {
-      xmin = Math.min(xmin, s.dist[i]); xmax = Math.max(xmax, s.dist[i]);
-      ymin = Math.min(ymin, s.val[i]); ymax = Math.max(ymax, s.val[i]);
+      const x = s.dist[i], v = s.val[i];
+      if (Number.isFinite(x)) { xmin = Math.min(xmin, x); xmax = Math.max(xmax, x); }
+      if (v != null && Number.isFinite(v)) { ymin = Math.min(ymin, v); ymax = Math.max(ymax, v); }
     }
   const st = section.structure;
   if (st) {
@@ -196,7 +197,13 @@ export function renderChart(ctx, W, H, section, optsIn = {}) {
     ctx.lineJoin = "round";
     ctx.setLineDash(s.dash || []);
     ctx.beginPath();
-    for (let i = 0; i < s.dist.length; i++) { const px = sx(s.dist[i]), py = sy(s.val[i]); i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }
+    let pen = false;                                   // break the line across null gaps
+    for (let i = 0; i < s.dist.length; i++) {
+      const v = s.val[i];
+      if (v == null || !Number.isFinite(v)) { pen = false; continue; }
+      const px = sx(s.dist[i]), py = sy(v);
+      pen ? ctx.lineTo(px, py) : (ctx.moveTo(px, py), (pen = true));
+    }
     ctx.stroke();
     ctx.setLineDash([]);
   }
@@ -234,6 +241,25 @@ export function renderChart(ctx, W, H, section, optsIn = {}) {
     ctx.fillText(`Thalweg ${g.val[ti].toFixed(2)}`, px + 6, py + 4);
   }
 
+  // cross-section location markers (longitudinal): vertical dash-dot lines with
+  // boxed labels, staggered top/bottom so adjacent labels don't collide.
+  if (o.markers && o.markers.length) {
+    ctx.font = `${Math.round(fontPx * 0.82)}px Arial, sans-serif`;
+    o.markers.forEach((m, i) => {
+      const px = sx(m.dist);
+      if (px < pL - 0.5 || px > pL + pW + 0.5) return;          // outside the plot
+      ctx.strokeStyle = "#7a7a7a"; ctx.lineWidth = 1; ctx.setLineDash([7, 3, 2, 3]);
+      line(ctx, px, pT, px, pT + pH); ctx.setLineDash([]);
+      const label = m.label, tw = ctx.measureText(label).width, bw = tw + 10, bh = Math.round(fontPx * 1.25);
+      let bx = px - bw / 2; bx = Math.max(pL + 1, Math.min(bx, pL + pW - bw - 1));
+      const by = i % 2 === 0 ? pT + 3 : pT + pH - bh - 3;       // alternate top / bottom
+      ctx.fillStyle = "rgba(255,255,255,0.95)"; ctx.strokeStyle = "#9a9a9a"; ctx.lineWidth = 1;
+      roundRect(ctx, bx, by, bw, bh, 3); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "#333"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(label, bx + bw / 2, by + bh / 2);
+    });
+  }
+
   // axis frame + tick labels + titles
   ctx.strokeStyle = o.axisColor; ctx.lineWidth = 1;
   line(ctx, pL, pT + pH, pL + pW, pT + pH);
@@ -242,7 +268,9 @@ export function renderChart(ctx, W, H, section, optsIn = {}) {
   ctx.textAlign = "right"; ctx.textBaseline = "middle";
   for (const y of yt) if (y >= ymin && y <= ymax) ctx.fillText(String(trimNum(y)), pL - 6, sy(y));
   ctx.textAlign = "center"; ctx.textBaseline = "top";
-  for (const x of xt) if (x >= xmin && x <= xmax) ctx.fillText(String(trimNum(x)), sx(x), pT + pH + 6);
+  // longitudinal profiles label X as stationing (SS+FF) offset by stationStart
+  const fmtX = (x) => (o.stationStart != null ? fmtStation(o.stationStart + x) : String(trimNum(x)));
+  for (const x of xt) if (x >= xmin && x <= xmax) ctx.fillText(fmtX(x), sx(x), pT + pH + 6);
 
   ctx.fillStyle = "#333"; ctx.font = `${Math.round(fontPx * 1.05)}px Arial, sans-serif`;
   ctx.textAlign = "center"; ctx.textBaseline = "bottom";
@@ -367,3 +395,8 @@ function interp(xs, ys, x) {
   return ys[ys.length - 1];
 }
 function trimNum(n) { return Math.abs(n) >= 100 ? Math.round(n) : Math.round(n * 100) / 100; }
+// Engineering stationing: feet → "SS+FF" (e.g. 1047 → "10+47").
+function fmtStation(ft) {
+  const r = Math.round(ft), whole = Math.floor(r / 100), rem = r - whole * 100;
+  return `${whole}+${String(rem).padStart(2, "0")}`;
+}

@@ -91,6 +91,14 @@
         </div>
       </details>
 
+      <details class="group" id="step5">
+        <summary><span class="num">5</span> Longitudinal profile <span class="muted">(optional)</span></summary>
+        <p class="hint">A single profile along the stream centerline (ground + each flood WSE vs. stationing), with your cross-section locations marked. Same SMS extraction as step 3, but choose <strong>Observation Profile</strong> for the <strong>centerline/thalweg arc</strong> instead of the cross-sections, then paste the values here.</p>
+        <label>Start station (ft) <input type="number" id="stationStart" class="small-input" step="1" placeholder="auto" /></label>
+        <textarea id="longitudinalPaste" rows="6" placeholder="Distance	Value	Distance	Value ...&#10;1	0.32	51.93	0.32	53.29 ..."></textarea>
+        <button id="genLongitudinal" class="primary">Generate longitudinal profile</button>
+      </details>
+
       <div id="lineStylesHost"></div>
 
       <div class="actions">
