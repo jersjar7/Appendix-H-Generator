@@ -613,7 +613,10 @@ stacks above the results on narrow screens (`@media max-width: 1000px`).
   named from the events — so column order / extra Proposed floods don't matter).
   The chart shows a **station X-axis** (`SS+FF`, offset by Start station),
   **cross-section location markers** (vertical dash-dot + staggered boxed labels,
-  taken from the step-2 Summary stations), and a **Download PNG** button. A
+  taken from the step-2 Summary stations), a **legend placement toolbar**
+  (8-position anchor dropdown + ◀▲▼▶ nudge/reset, via `legendAnchor` /
+  `legendOffX` / `legendOffY`; offsets clamp inside the plot), and a
+  **Download PNG** button. A
   **view toggle** (Cross sections ⇄ Longitudinal profile) appears once both
   exist. Line styles apply to both views (shared events).
 - **Line styles** (rail, populated after Generate): per-line color + line type +

@@ -15,7 +15,9 @@ const PRESETS = {
   proposed: ["2-year", "100-year", "500-year", "2080 100-year"],
 };
 
-let state = { sections: [], canvases: [], order: "asc", styles: {}, longitudinal: null, view: "sections" };
+let state = { sections: [], canvases: [], order: "asc", styles: {}, longitudinal: null, view: "sections", legend: { anchor: "right-middle", offX: 0, offY: 0 } };
+const LEGEND_POSITIONS = [["right-middle", "Right (middle)"], ["top-right", "Top-right"], ["bottom-right", "Bottom-right"], ["top-left", "Top-left"], ["bottom-left", "Bottom-left"], ["top-center", "Top-center"], ["bottom-center", "Bottom-center"], ["left-middle", "Left (middle)"]];
+const LEGEND_NUDGE = 24;   // canvas px per Move click
 
 // Named line styles for the per-event picker (label → key matches chart.js LINE_STYLES).
 const STYLE_OPTIONS = [["solid", "Solid"], ["dashed", "Dashed"], ["longDash", "Long dash"], ["dashDot", "Dash-dot"], ["dotted", "Dotted"]];
@@ -393,7 +395,9 @@ function longitudinalOptions() {
     ...base,
     xTitle: "Station (feet)",
     note: "",                // self-evident on a longitudinal profile; frees space for X-section labels
-    legendAnchor: "right-middle",
+    legendAnchor: state.legend.anchor,
+    legendOffX: state.legend.offX,
+    legendOffY: state.legend.offY,
     stationStart,
     markers: longitudinalMarkers(stationStart),
     showInundation: false,   // gappy WSE under structures → off for the reach view
@@ -423,14 +427,33 @@ function renderLongitudinal() {
   card.appendChild(longCanvas);
   const actions = document.createElement("div");
   actions.className = "long-actions";
-  const dl = document.createElement("button");
-  dl.className = "ghost small"; dl.textContent = "Download PNG";
-  dl.addEventListener("click", () => {
+  actions.innerHTML = `
+    <label class="inline">Legend
+      <select class="leg-pos">${LEGEND_POSITIONS.map(([v, l]) => `<option value="${v}"${v === state.legend.anchor ? " selected" : ""}>${l}</option>`).join("")}</select>
+    </label>
+    <span class="leg-nudge"><span class="ctrl-lbl">Move</span>
+      <button class="ghost small" data-d="L" title="Left">◀</button>
+      <button class="ghost small" data-d="U" title="Up">▲</button>
+      <button class="ghost small" data-d="D" title="Down">▼</button>
+      <button class="ghost small" data-d="R" title="Right">▶</button>
+      <button class="ghost small" data-d="0" title="Reset position">reset</button>
+    </span>
+    <button class="ghost small leg-dl">Download PNG</button>`;
+  actions.querySelector(".leg-pos").addEventListener("change", (e) => { state.legend.anchor = e.target.value; drawLongitudinal(); });
+  actions.querySelectorAll(".leg-nudge button").forEach((b) => b.addEventListener("click", () => {
+    const d = b.dataset.d;
+    if (d === "0") { state.legend.offX = 0; state.legend.offY = 0; }
+    else if (d === "L") state.legend.offX -= LEGEND_NUDGE;
+    else if (d === "R") state.legend.offX += LEGEND_NUDGE;
+    else if (d === "U") state.legend.offY -= LEGEND_NUDGE;
+    else if (d === "D") state.legend.offY += LEGEND_NUDGE;
+    drawLongitudinal();
+  }));
+  actions.querySelector(".leg-dl").addEventListener("click", () => {
     const a = document.createElement("a");
     a.download = `${($("condition").value.trim() || "Appendix H").replace(/[^\w]+/g, "_")}_Longitudinal_Profile.png`;
     a.href = longCanvas.toDataURL("image/png"); a.click();
   });
-  actions.appendChild(dl);
   card.appendChild(actions);
   wrap.appendChild(card);
   drawLongitudinal();
@@ -587,7 +610,7 @@ function restart() {
   $("summary").value = "";
   $("profile").value = "";
   ["optEarth", "optWater", "optThalweg", "optLegend"].forEach((id) => ($(id).checked = true));
-  state = { sections: [], canvases: [], order: "asc", styles: {}, longitudinal: null, view: "sections" };
+  state = { sections: [], canvases: [], order: "asc", styles: {}, longitudinal: null, view: "sections", legend: { anchor: "right-middle", offX: 0, offY: 0 } };
   $("results").innerHTML = "";
   $("lineStylesHost").innerHTML = "";
   $("longitudinalPaste").value = "";
