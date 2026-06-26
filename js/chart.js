@@ -317,9 +317,21 @@ function drawLegend(ctx, series, o, geo, fontPx) {
     [pL + 10, pT + pH - boxH - 10], // bottom-left
     [pL + (pW - boxW) / 2, pT + 8], // top-center
   ];
+  // explicit anchor positions (user-chosen); "auto" falls back to smart placement
+  const m = 10;
+  const anchorPos = {
+    "top-left": [pL + m, pT + m],
+    "top-center": [pL + (pW - boxW) / 2, pT + m],
+    "top-right": [pL + pW - boxW - m, pT + m],
+    "left-middle": [pL + m, pT + (pH - boxH) / 2],
+    "right-middle": [pL + pW - boxW - m, pT + (pH - boxH) / 2],
+    "bottom-left": [pL + m, pT + pH - boxH - m],
+    "bottom-center": [pL + (pW - boxW) / 2, pT + pH - boxH - m],
+    "bottom-right": [pL + pW - boxW - m, pT + pH - boxH - m],
+  };
   let best = candidates[0], bestScore = Infinity;
-  if (o.legendAnchor === "right-middle") {
-    best = [pL + pW - boxW - 10, pT + (pH - boxH) / 2];   // mid-height, right edge (longitudinal)
+  if (o.legendAnchor && anchorPos[o.legendAnchor]) {
+    best = anchorPos[o.legendAnchor];
   } else if (o.legendInside) {
     for (const [bx, by] of candidates) {
       let score = 0;
@@ -333,8 +345,9 @@ function drawLegend(ctx, series, o, geo, fontPx) {
       if (score < bestScore) { bestScore = score; best = [bx, by]; }
     }
   } else best = candidates[0];
-
-  const [bx, by] = best;
+  // user nudge, clamped so the box stays within the plot
+  const bx = Math.max(pL, Math.min(pL + pW - boxW, best[0] + (o.legendOffX || 0)));
+  const by = Math.max(pT, Math.min(pT + pH - boxH, best[1] + (o.legendOffY || 0)));
   ctx.fillStyle = "rgba(255,255,255,0.92)"; ctx.strokeStyle = "#cccccc"; ctx.lineWidth = 1;
   roundRect(ctx, bx, by, boxW, boxH, 5); ctx.fill(); ctx.stroke();
   ctx.textAlign = "left"; ctx.textBaseline = "middle";

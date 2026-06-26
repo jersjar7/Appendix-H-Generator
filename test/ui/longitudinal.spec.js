@@ -14,14 +14,22 @@ test("longitudinal: paste → generate one profile chart with a PNG download", a
 
   // one big profile canvas + a PNG download button, and the ok banner
   await expect(page.locator(".long-card canvas")).toHaveCount(1);
-  await expect(page.locator(".long-actions button")).toContainText(/PNG/i);
+  await expect(page.locator(".long-actions .leg-dl")).toContainText(/PNG/i);
   await expect(page.locator("#messages")).toContainText(/Longitudinal profile/i);
 
-  // the longitudinal canvas is non-blank
-  const nonBlank = await page.locator(".long-card canvas").evaluate((c) => {
+  const snap = () => page.locator(".long-card canvas").evaluate((c) => c.toDataURL());
+  const blankCheck = () => page.locator(".long-card canvas").evaluate((c) => {
     const d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data;
     for (let i = 0; i < d.length; i += 4) if (d[i] !== d[0] || d[i + 1] !== d[1] || d[i + 2] !== d[2]) return true;
     return false;
   });
-  expect(nonBlank).toBe(true);
+  expect(await blankCheck()).toBe(true);
+
+  // legend controls re-place the legend (canvas changes)
+  const before = await snap();
+  await page.locator(".long-actions .leg-pos").selectOption("top-left");
+  await expect.poll(snap).not.toBe(before);
+  const afterPos = await snap();
+  await page.locator('.leg-nudge button[data-d="D"]').click();
+  await expect.poll(snap).not.toBe(afterPos);
 });
