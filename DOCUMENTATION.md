@@ -584,18 +584,29 @@ The generated package layout: `[Content_Types].xml`, `_rels/.rels`,
 
 ## 15. UI reference
 
+**Layout** — a two-pane dashboard (mirrors the Appendix K Generator): a persistent
+**results area** (`<main class="results-area">`, left) holds the charts, and a
+**controls rail** (`<aside class="controls">`, right) holds collapsible numbered
+`<details class="group">` steps. Global feature growth lands in the rail as new
+groups, not as more page scroll; **per-chart** controls stay on each card. Steps 2
+& 3 (the tall paste boxes) auto-collapse after a successful Generate; the rail
+stacks above the results on narrow screens (`@media max-width: 1000px`).
+
 - **Header**: title + **↺ Restart** button (clears all inputs to defaults;
   confirms only when there is data to lose).
-- **Saved inputs** panel (collapsible) — see §14.
+- **Saved inputs** panel (collapsible, rail group 0) — see §14.
 - **Step 1 — Condition & flow events**: condition text; **Existing/Proposed**
   presets; an ordered, add/remove/reorder **event list** (increasing discharge).
 - **Step 2 — Summary Table** paste box.
 - **Step 3 — Profile values** paste box.
 - **Auto-count hint**: as you paste, shows `Detected N cross sections × M
   datasets …` or a warning if `pairs ÷ sections` isn't a whole number.
-- **Step 4 — Options**: checkboxes **Earth fill**, **Inundation shading**,
-  **Thalweg marker**, **Smart legend placement**; **Generate charts**,
-  **Save inputs**, **Download Word document**.
+- **Step 4 — Display options**: checkboxes **Earth fill**, **Inundation shading**,
+  **Thalweg marker**, **Smart legend placement**.
+- **Line styles** (rail, populated after Generate): per-line color + line type +
+  thickness — see §11. Host element `#lineStylesHost`.
+- **Actions** (pinned at the rail bottom): **Generate charts**, **Save inputs**,
+  **Download Word document**.
 - **Messages**: ok/warn/error banners (e.g., generation summary, mismatch
   warnings).
 - **Results**: a **station-button nav** (chips) + asc/desc **order toggle**,

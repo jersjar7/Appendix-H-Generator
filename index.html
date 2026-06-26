@@ -17,76 +17,89 @@
     </div>
   </header>
 
-  <main>
-    <details id="historyPanel" class="card history-card">
-      <summary><strong>Saved inputs</strong> <span id="historyCount" class="hcount"></span></summary>
-      <p class="hint">Stores the values you pasted in steps 2 &amp; 3 (plus condition &amp; events) on this device — not the charts. Load one to refill the inputs.</p>
-      <ul id="historyList" class="history-list"></ul>
-      <button id="clearHistory" class="ghost small">Clear all saved inputs</button>
-    </details>
+  <div class="dashboard">
+    <main class="results-area">
+      <div id="messages"></div>
+      <div id="resultsPlaceholder" class="placeholder">
+        <p>Your cross-section charts will appear here.</p>
+        <p class="hint">Fill in steps 1–3 in the panel, then click <strong>Generate charts</strong>.</p>
+      </div>
+      <div id="results"></div>
+    </main>
 
-    <section class="card">
-      <h2><span class="step">1</span> Condition &amp; flow events</h2>
-      <div class="row">
-        <label>Condition label (used in captions)
-          <input id="condition" type="text" value="Existing Conditions" />
-        </label>
-        <div class="presets">
-          <span>Presets:</span>
-          <button class="ghost" data-preset="existing">Existing (2/100/500)</button>
-          <button class="ghost" data-preset="proposed">Proposed (+2080)</button>
+    <aside class="controls">
+      <details id="historyPanel" class="group">
+        <summary><span class="num">0</span> Saved inputs <span id="historyCount" class="hcount"></span></summary>
+        <p class="hint">Stores the values you pasted in steps 2 &amp; 3 (plus condition &amp; events) on this device — not the charts. Load one to refill the inputs.</p>
+        <ul id="historyList" class="history-list"></ul>
+        <button id="clearHistory" class="ghost small">Clear all saved inputs</button>
+      </details>
+
+      <details class="group" id="step1" open>
+        <summary><span class="num">1</span> Condition &amp; flow events</summary>
+        <div class="row">
+          <label>Condition label (used in captions)
+            <input id="condition" type="text" value="Existing Conditions" />
+          </label>
+          <div class="presets">
+            <span>Presets:</span>
+            <button class="ghost" data-preset="existing">Existing (2/100/500)</button>
+            <button class="ghost" data-preset="proposed">Proposed (+2080)</button>
+          </div>
         </div>
+        <p class="hint">List the flow events <strong>in increasing order of discharge</strong> — exactly the surfaces you exported (Ground is automatic). Add or remove as many as you need.</p>
+        <ul id="eventList" class="events"></ul>
+        <button id="addEvent" class="ghost small">+ Add event</button>
+        <p id="autoCount" class="auto"></p>
+      </details>
+
+      <details class="group" id="step2" open>
+        <summary><span class="num">2</span> Paste the SMS Summary Table</summary>
+        <p class="hint">In SMS, get the stations + thalweg (Z&nbsp;Min) used to match each cross section:</p>
+        <ol class="hint-list">
+          <li>Right-click the <strong>1D FHD reporting coverage</strong> → <strong>Summary Table</strong>.</li>
+          <li>Click <strong>Generate Table</strong>.</li>
+          <li>Click <strong>Copy to Clipboard</strong>, then paste below.</li>
+        </ol>
+        <textarea id="summary" rows="5" placeholder="Reach	Station	Min&#10;Hood Canal	1047.09	54.78&#10;Hood Canal	1065.36	55.68"></textarea>
+      </details>
+
+      <details class="group" id="step3" open>
+        <summary><span class="num">3</span> Paste the SMS profile values</summary>
+        <p class="hint">In SMS, extract the cross-section profiles:</p>
+        <ol class="hint-list">
+          <li>Activate the <strong>observation cross-sections coverage</strong> (Existing or Proposed).</li>
+          <li>Top menu <strong>Display → Plot Wizard</strong>.</li>
+          <li>Choose plot type <strong>Observation Profile</strong>, then <strong>Next</strong>.</li>
+          <li>Confirm the coverage is the observation cross-sections, and that <strong>all arcs are selected / active</strong>.</li>
+          <li>Under <strong>Data sets</strong>, switch from <em>Active</em> to <strong>Specified</strong>, pick the <strong>mesh</strong>, then check the <strong>terrain Z (ground)</strong> plus each flood <strong>water-surface elevation</strong> you need (2-year, 100-year, 500-year, …).</li>
+          <li>Under <strong>Time steps</strong>, choose <strong>Specified</strong> and check <strong>only the last time step</strong> of the simulation.</li>
+          <li>Click <strong>Finish</strong> — the profile plot appears.</li>
+          <li>Right-click the plot → <strong>View Values</strong> → <strong>Ctrl+A</strong>, <strong>Ctrl+C</strong>.</li>
+          <li>Paste below.</li>
+        </ol>
+        <textarea id="profile" rows="8" placeholder="Distance	Value	Distance	Value ...&#10;1	0.0	74.60	10.87	67.78 ..."></textarea>
+      </details>
+
+      <details class="group" id="step4" open>
+        <summary><span class="num">4</span> Display options</summary>
+        <div class="opts">
+          <label class="chk"><input type="checkbox" id="optEarth" checked /> Earth fill</label>
+          <label class="chk"><input type="checkbox" id="optWater" checked /> Inundation shading</label>
+          <label class="chk"><input type="checkbox" id="optThalweg" checked /> Thalweg marker</label>
+          <label class="chk"><input type="checkbox" id="optLegend" checked /> Smart legend placement</label>
+        </div>
+      </details>
+
+      <div id="lineStylesHost"></div>
+
+      <div class="actions">
+        <button id="generate" class="primary">Generate charts</button>
+        <button id="saveInputs" class="ghost">Save inputs</button>
+        <button id="download" class="primary alt" disabled>Download Word document</button>
       </div>
-      <p class="hint">List the flow events <strong>in increasing order of discharge</strong> — exactly the surfaces you exported (Ground is automatic). Add or remove as many as you need.</p>
-      <ul id="eventList" class="events"></ul>
-      <button id="addEvent" class="ghost small">+ Add event</button>
-      <p id="autoCount" class="auto"></p>
-    </section>
-
-    <section class="card">
-      <h2><span class="step">2</span> Paste the SMS Summary Table</h2>
-      <p class="hint">In SMS, get the stations + thalweg (Z&nbsp;Min) used to match each cross section:</p>
-      <ol class="hint-list">
-        <li>Right-click the <strong>1D FHD reporting coverage</strong> → <strong>Summary Table</strong>.</li>
-        <li>Click <strong>Generate Table</strong>.</li>
-        <li>Click <strong>Copy to Clipboard</strong>, then paste below.</li>
-      </ol>
-      <textarea id="summary" rows="5" placeholder="Reach	Station	Min&#10;Hood Canal	1047.09	54.78&#10;Hood Canal	1065.36	55.68"></textarea>
-    </section>
-
-    <section class="card">
-      <h2><span class="step">3</span> Paste the SMS profile values</h2>
-      <p class="hint">In SMS, extract the cross-section profiles:</p>
-      <ol class="hint-list">
-        <li>Activate the <strong>observation cross-sections coverage</strong> (Existing or Proposed).</li>
-        <li>Top menu <strong>Display → Plot Wizard</strong>.</li>
-        <li>Choose plot type <strong>Observation Profile</strong>, then <strong>Next</strong>.</li>
-        <li>Confirm the coverage is the observation cross-sections, and that <strong>all arcs are selected / active</strong>.</li>
-        <li>Under <strong>Data sets</strong>, switch from <em>Active</em> to <strong>Specified</strong>, pick the <strong>mesh</strong>, then check the <strong>terrain Z (ground)</strong> plus each flood <strong>water-surface elevation</strong> you need (2-year, 100-year, 500-year, …).</li>
-        <li>Under <strong>Time steps</strong>, choose <strong>Specified</strong> and check <strong>only the last time step</strong> of the simulation.</li>
-        <li>Click <strong>Finish</strong> — the profile plot appears.</li>
-        <li>Right-click the plot → <strong>View Values</strong> → <strong>Ctrl+A</strong>, <strong>Ctrl+C</strong>.</li>
-        <li>Paste below.</li>
-      </ol>
-      <textarea id="profile" rows="8" placeholder="Distance	Value	Distance	Value ...&#10;1	0.0	74.60	10.87	67.78 ..."></textarea>
-    </section>
-
-    <section class="card">
-      <h2><span class="step">4</span> Options</h2>
-      <div class="opts">
-        <label class="chk"><input type="checkbox" id="optEarth" checked /> Earth fill</label>
-        <label class="chk"><input type="checkbox" id="optWater" checked /> Inundation shading</label>
-        <label class="chk"><input type="checkbox" id="optThalweg" checked /> Thalweg marker</label>
-        <label class="chk"><input type="checkbox" id="optLegend" checked /> Smart legend placement</label>
-      </div>
-      <button id="generate" class="primary">Generate charts</button>
-      <button id="saveInputs" class="ghost">Save inputs</button>
-      <button id="download" class="primary alt" disabled>Download Word document</button>
-    </section>
-
-    <div id="messages"></div>
-    <div id="results"></div>
-  </main>
+    </aside>
+  </div>
 
   <footer>
     <p>Cross-section charts for hydraulic appendices · runs entirely client-side</p>

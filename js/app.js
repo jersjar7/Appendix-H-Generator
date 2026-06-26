@@ -110,6 +110,8 @@ function generate() {
   setMessages(msgs);
   renderResults(conditionLabel);
   $("download").disabled = state.sections.length === 0;
+  // tidy the rail: collapse the tall paste steps once charts exist
+  if (state.sections.length) ["step2", "step3", "historyPanel"].forEach((id) => ($(id).open = false));
 
   // save these inputs to local history (text from steps 1-3, not the charts)
   saveRun({ ...currentInputs(), count: result.sections.length });
@@ -158,6 +160,7 @@ function renderResults(conditionLabel) {
   const wrap = $("results");
   wrap.innerHTML = "";
   state.canvases = [];
+  $("resultsPlaceholder").hidden = state.sections.length > 0;
 
   // nav: order toggle + station chips
   const nav = document.createElement("div");
@@ -176,9 +179,13 @@ function renderResults(conditionLabel) {
   const chips = document.createElement("div");
   chips.className = "station-nav";
   nav.appendChild(chips);
-  const stylePanel = buildStylePanel();
-  if (stylePanel) nav.appendChild(stylePanel);
   wrap.appendChild(nav);
+
+  // line-styles panel lives in the controls rail (global), repopulated each render
+  const styleHost = $("lineStylesHost");
+  styleHost.innerHTML = "";
+  const stylePanel = buildStylePanel();
+  if (stylePanel) styleHost.appendChild(stylePanel);
 
   // horizontal slider of charts
   const strip = document.createElement("div");
@@ -478,6 +485,9 @@ function restart() {
   ["optEarth", "optWater", "optThalweg", "optLegend"].forEach((id) => ($(id).checked = true));
   state = { sections: [], canvases: [], order: "asc", styles: {} };
   $("results").innerHTML = "";
+  $("lineStylesHost").innerHTML = "";
+  $("resultsPlaceholder").hidden = false;
+  ["step1", "step2", "step3", "step4"].forEach((id) => ($(id).open = true));
   $("messages").innerHTML = "";
   $("autoCount").textContent = "";
   $("download").disabled = true;
@@ -541,6 +551,7 @@ function loadRun(run) {
   updateAutoCount();
   // refill the inputs only — let the user review, then click Generate.
   $("historyPanel").open = false;
+  ["step1", "step2", "step3"].forEach((id) => ($(id).open = true));   // reveal the loaded inputs
   setMessages([{ type: "ok", text: "Inputs loaded into steps 1–3. Review them, then click “Generate charts”." }]);
   $("summary").scrollIntoView({ behavior: "smooth", block: "start" });
 }
