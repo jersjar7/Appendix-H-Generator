@@ -15,7 +15,7 @@ const PRESETS = {
   proposed: ["2-year", "100-year", "500-year", "2080 100-year"],
 };
 
-let state = { sections: [], canvases: [], order: "asc", styles: { sections: {}, long: {} }, longitudinal: null, view: "sections", legend: { anchor: "right-middle", offX: 0, offY: 0 } };
+let state = { sections: [], canvases: [], order: "asc", styles: { sections: {}, long: {} }, longitudinal: null, view: "sections", legend: { anchor: "right-middle", offX: 0, offY: 0 }, markerLabels: "auto" };
 const LEGEND_POSITIONS = [["right-middle", "Right (middle)"], ["top-right", "Top-right"], ["bottom-right", "Bottom-right"], ["top-left", "Top-left"], ["bottom-left", "Bottom-left"], ["top-center", "Top-center"], ["bottom-center", "Bottom-center"], ["left-middle", "Left (middle)"]];
 const LEGEND_NUDGE = 24;   // canvas px per Move click
 
@@ -140,6 +140,7 @@ function currentInputs() {
       loptWater: $("loptWater").checked,
       styles: state.styles,
       legend: { ...state.legend },
+      markerLabels: state.markerLabels,
     },
   };
 }
@@ -402,6 +403,7 @@ function longitudinalOptions() {
     legendOffY: state.legend.offY,
     stationStart,
     markers: longitudinalMarkers(stationStart),
+    markerLabels: state.markerLabels,
     styles: state.styles.long,
   };
 }
@@ -429,6 +431,9 @@ function renderLongitudinal() {
   const actions = document.createElement("div");
   actions.className = "long-actions";
   actions.innerHTML = `
+    <label class="inline">X-section labels
+      <select class="mark-pos">${[["auto", "Auto"], ["top", "Top"], ["bottom", "Bottom"]].map(([v, l]) => `<option value="${v}"${v === state.markerLabels ? " selected" : ""}>${l}</option>`).join("")}</select>
+    </label>
     <label class="inline">Legend
       <select class="leg-pos">${LEGEND_POSITIONS.map(([v, l]) => `<option value="${v}"${v === state.legend.anchor ? " selected" : ""}>${l}</option>`).join("")}</select>
     </label>
@@ -439,6 +444,7 @@ function renderLongitudinal() {
       <button class="ghost small" data-d="R" title="Right">▶</button>
       <button class="ghost small" data-d="0" title="Reset position">reset</button>
     </span>`;
+  actions.querySelector(".mark-pos").addEventListener("change", (e) => { state.markerLabels = e.target.value; drawLongitudinal(); });
   actions.querySelector(".leg-pos").addEventListener("change", (e) => { state.legend.anchor = e.target.value; drawLongitudinal(); });
   actions.querySelectorAll(".leg-nudge button").forEach((b) => b.addEventListener("click", () => {
     const d = b.dataset.d;
@@ -614,7 +620,7 @@ function restart() {
   $("profile").value = "";
   ["optEarth", "optWater", "optThalweg", "optLegend", "loptEarth"].forEach((id) => ($(id).checked = true));
   $("loptWater").checked = false;
-  state = { sections: [], canvases: [], order: "asc", styles: { sections: {}, long: {} }, longitudinal: null, view: "sections", legend: { anchor: "right-middle", offX: 0, offY: 0 } };
+  state = { sections: [], canvases: [], order: "asc", styles: { sections: {}, long: {} }, longitudinal: null, view: "sections", legend: { anchor: "right-middle", offX: 0, offY: 0 }, markerLabels: "auto" };
   $("results").innerHTML = "";
   $("longitudinalPaste").value = ""; $("stationStart").value = "";
   refreshStylePanel("sections"); refreshStylePanel("long");
@@ -689,6 +695,7 @@ function loadRun(run) {
   const s = o.styles && typeof o.styles === "object" ? o.styles : {};
   state.styles = (s.sections || s.long) ? { sections: { ...(s.sections || {}) }, long: { ...(s.long || {}) } } : { sections: { ...s }, long: {} };
   if (o.legend && typeof o.legend === "object") state.legend = { anchor: "right-middle", offX: 0, offY: 0, ...o.legend };
+  if (o.markerLabels) state.markerLabels = o.markerLabels;
   updateAutoCount();
   // refill the inputs only — let the user review, then click Generate.
   $("historyPanel").open = false;
