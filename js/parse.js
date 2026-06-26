@@ -17,7 +17,7 @@ const isNum = (s) => s !== undefined && s !== null && s !== "" && !isNaN(Number(
  * columns. Each dataset = one {dist:[], val:[]} pair, blanks and -9999 removed.
  * The leading row-index column (1,2,3,...) is detected and dropped.
  */
-export function parseProfile(text) {
+export function parseProfile(text, { keepGaps = false } = {}) {
   const lines = text.replace(/\r/g, "").split("\n").filter((l) => l.trim() !== "");
   if (!lines.length) return { pairs: [], warnings: ["No data found."] };
 
@@ -58,7 +58,13 @@ export function parseProfile(text) {
       if (!isNum(dCell) || !isNum(vCell)) continue;
       const d = Number(dCell);
       const v = Number(vCell);
-      if (v === NODATA || d === NODATA) continue;
+      if (d === NODATA) continue;
+      if (v === NODATA) {
+        // keepGaps: preserve the station with a null value so lines break here
+        // (e.g. a water surface that goes dry under a culvert); else drop it.
+        if (keepGaps) { pairs[p].dist.push(d); pairs[p].val.push(null); }
+        continue;
+      }
       pairs[p].dist.push(d);
       pairs[p].val.push(v);
     }

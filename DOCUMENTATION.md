@@ -603,6 +603,19 @@ stacks above the results on narrow screens (`@media max-width: 1000px`).
   datasets …` or a warning if `pairs ÷ sections` isn't a whole number.
 - **Step 4 — Display options**: checkboxes **Earth fill**, **Inundation shading**,
   **Thalweg marker**, **Smart legend placement**.
+- **Step 5 — Longitudinal profile** (optional): paste the SMS *Observation
+  Profile* for the **centerline/thalweg arc** (same export as step 3, different
+  arc) plus an optional **Start station (ft)**; **Generate longitudinal profile**
+  renders one chart of ground + each flood WSE vs. **stationing** along the reach.
+  Parsed with `parseProfile(text,{keepGaps:true})` (keeps `-9999` as null so WSE
+  lines **break** where they go dry under a structure) and built by
+  `buildLongitudinal` (ground = lowest-minimum dataset; WSE ranked by mean and
+  named from the events — so column order / extra Proposed floods don't matter).
+  The chart shows a **station X-axis** (`SS+FF`, offset by Start station),
+  **cross-section location markers** (vertical dash-dot + staggered boxed labels,
+  taken from the step-2 Summary stations), and a **Download PNG** button. A
+  **view toggle** (Cross sections ⇄ Longitudinal profile) appears once both
+  exist. Line styles apply to both views (shared events).
 - **Line styles** (rail, populated after Generate): per-line color + line type +
   thickness — see §11. Host element `#lineStylesHost`.
 - **Actions** (pinned at the rail bottom): **Generate charts**, **Save inputs**,
