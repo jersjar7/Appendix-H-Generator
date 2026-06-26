@@ -6,10 +6,9 @@ test("line styles: per-event color + line type panel redraws all charts", async 
   await pasteFixtures(page);
   await generate(page);
 
-  // panel lists ground + one row per water-surface event (fixtures: 2/100/500-year)
-  const panel = page.locator(".style-panel");
+  // the step-3 line-styles panel lists ground + one row per event (2/100/500-year)
+  const panel = page.locator("#lineStylesHostSections .style-panel");
   await expect(panel).toHaveCount(1);
-  await panel.locator("summary").click();
   const rows = panel.locator(".style-row");
   await expect(rows).toHaveCount(4);                 // ground + 3 events
   await expect(rows.first().locator(".ls-name")).toContainText(/Ground/i);
