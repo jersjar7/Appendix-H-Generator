@@ -155,7 +155,7 @@ export function renderChart(ctx, W, H, section, optsIn = {}) {
   // earth fill (semi-transparent so the gridlines read through it)
   if (o.showEarthFill) {
     ctx.fillStyle = o.earthColor;
-    ctx.globalAlpha = 0.72;
+    ctx.globalAlpha = 0.5;
     ctx.beginPath();
     const g = series[0];
     ctx.moveTo(sx(g.dist[0]), sy(g.val[0]));
