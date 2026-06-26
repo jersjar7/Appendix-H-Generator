@@ -7,6 +7,10 @@ export async function openApp(page) {
   await page.goto("/index.html");
   await page.evaluate(() => localStorage.clear());
   await page.reload();
+  // steps are collapsed by default in the app; expand them so tests can interact
+  await page.evaluate(() => ["step1", "step2", "step3", "step4"].forEach((id) => {
+    const d = document.getElementById(id); if (d) d.open = true;
+  }));
   await expect(page.locator("#generate")).toBeVisible();
 }
 

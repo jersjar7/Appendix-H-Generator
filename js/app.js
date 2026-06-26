@@ -139,14 +139,15 @@ function currentInputs() {
       loptEarth: $("loptEarth").checked,
       loptWater: $("loptWater").checked,
       styles: state.styles,
+      legend: { ...state.legend },
     },
   };
 }
 
 // explicit "Save inputs" — store the pasted values without generating charts
 function saveInputs() {
-  if (!$("summary").value.trim() && !$("profile").value.trim()) {
-    setMessages([{ type: "warn", text: "Nothing to save yet — paste your Summary Table or profile values first." }]);
+  if (!$("summary").value.trim() && !$("profile").value.trim() && !$("longitudinalPaste").value.trim()) {
+    setMessages([{ type: "warn", text: "Nothing to save yet — paste your Summary Table, profile, or longitudinal values first." }]);
     return;
   }
   saveRun(currentInputs());
@@ -618,8 +619,7 @@ function restart() {
   $("longitudinalPaste").value = ""; $("stationStart").value = "";
   refreshStylePanel("sections"); refreshStylePanel("long");
   $("resultsPlaceholder").hidden = false;
-  ["step1", "step2", "step3"].forEach((id) => ($(id).open = true));
-  $("step4").open = false;
+  ["historyPanel", "step1", "step2", "step3", "step4"].forEach((id) => ($(id).open = false));
   $("messages").innerHTML = "";
   $("autoCount").textContent = "";
   $("download").disabled = true; $("dlLong").disabled = true;
@@ -688,6 +688,7 @@ function loadRun(run) {
   // styles: support the new {sections,long} shape and legacy flat maps
   const s = o.styles && typeof o.styles === "object" ? o.styles : {};
   state.styles = (s.sections || s.long) ? { sections: { ...(s.sections || {}) }, long: { ...(s.long || {}) } } : { sections: { ...s }, long: {} };
+  if (o.legend && typeof o.legend === "object") state.legend = { anchor: "right-middle", offX: 0, offY: 0, ...o.legend };
   updateAutoCount();
   // refill the inputs only — let the user review, then click Generate.
   $("historyPanel").open = false;

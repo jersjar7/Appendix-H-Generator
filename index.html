@@ -13,7 +13,10 @@
         <h1>Appendix H Generator</h1>
         <p class="sub">Paste your SMS values, get clean cross-section charts and a Word document — all in your browser. Nothing is uploaded.</p>
       </div>
-      <button id="restart" class="restart" title="Clear all inputs and start over">↺ Restart</button>
+      <div class="header-actions">
+        <button id="saveInputs" type="button" title="Save all your current inputs to reuse later">Save inputs</button>
+        <button id="restart" type="button" title="Clear all inputs and start over">↺ Restart</button>
+      </div>
     </div>
   </header>
 
@@ -35,7 +38,7 @@
         <button id="clearHistory" class="ghost small">Clear all saved inputs</button>
       </details>
 
-      <details class="group" id="step1" open>
+      <details class="group" id="step1">
         <summary><span class="num">1</span> Condition &amp; flow events
           <span class="infotip">
             <button type="button" class="info-i" aria-label="About flow events">i</button>
@@ -57,7 +60,7 @@
         <p id="autoCount" class="auto"></p>
       </details>
 
-      <details class="group" id="step2" open>
+      <details class="group" id="step2">
         <summary><span class="num">2</span> Paste the SMS Summary Table
           <span class="infotip">
             <button type="button" class="info-i" aria-label="How to get the Summary Table">i</button>
@@ -73,12 +76,7 @@
         <textarea id="summary" rows="5" placeholder="Reach	Station	Min&#10;Hood Canal	1047.09	54.78&#10;Hood Canal	1065.36	55.68"></textarea>
       </details>
 
-      <div class="shared-actions">
-        <button id="saveInputs" class="ghost small">Save inputs</button>
-        <span class="shared-hint">Saves the inputs above to reuse later (find them under <strong>0 · Saved inputs</strong>).</span>
-      </div>
-
-      <details class="group figure-group" id="step3" open>
+      <details class="group figure-group" id="step3">
         <summary><span class="num">3</span> Station cross-sections
           <span class="infotip">
             <button type="button" class="info-i" aria-label="How to extract the profile values">i</button>
@@ -115,7 +113,7 @@
       </details>
 
       <details class="group figure-group" id="step4">
-        <summary><span class="num">4</span> Longitudinal profile <span class="muted">(optional)</span>
+        <summary><span class="num">4</span> Longitudinal profile
           <span class="infotip">
             <button type="button" class="info-i" aria-label="About the longitudinal profile">i</button>
             <span class="info-pop">A single profile along the stream centerline (ground + each flood WSE vs. stationing), with your cross-section locations marked. Same SMS extraction as step 3, but choose <strong>Observation Profile</strong> for the <strong>centerline/thalweg arc</strong> instead of the cross-sections, then paste the values here.</span>

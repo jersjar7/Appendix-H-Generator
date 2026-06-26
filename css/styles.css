@@ -29,8 +29,9 @@ header {
 header h1 { margin: 0 0 4px; font-size: 1.6rem; }
 header .sub { margin: 0; opacity: 0.9; font-size: 0.95rem; }
 .header-inner { max-width: 1500px; margin: 0 auto; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
-.restart { background: rgba(255, 255, 255, 0.16); color: #fff; border: 1px solid rgba(255, 255, 255, 0.45); padding: 8px 14px; flex-shrink: 0; }
-.restart:hover { background: rgba(255, 255, 255, 0.28); }
+.header-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.header-actions button { background: rgba(255, 255, 255, 0.16); color: #fff; border: 1px solid rgba(255, 255, 255, 0.45); padding: 8px 14px; white-space: nowrap; }
+.header-actions button:hover { background: rgba(255, 255, 255, 0.28); }
 
 /* two-pane dashboard: results (main, persistent) + collapsible controls rail */
 .dashboard { display: flex; gap: 16px; align-items: flex-start; max-width: 1500px; margin: 22px auto; padding: 0 16px 50px; }
