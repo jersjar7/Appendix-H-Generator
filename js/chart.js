@@ -131,8 +131,8 @@ export function renderChart(ctx, W, H, section, optsIn = {}) {
   if (section.yOverride) { ymin = section.yOverride.min; ymax = section.yOverride.max; }
   else { const pad = (ymax - ymin) * 0.08 + 0.4; ymin -= pad; ymax += pad * 1.3; }
 
-  // plot rect
-  const L = 80, R = 20, T = 16, B = 60;
+  // plot rect (B/L leave room so axis titles clear the tick values)
+  const L = 96, R = 20, T = 16, B = 80;
   const pL = L, pT = T, pW = W - L - R, pH = H - T - B;
   const sx = (x) => pL + ((x - xmin) / (xmax - xmin)) * pW;
   const sy = (y) => pT + ((ymax - y) / (ymax - ymin)) * pH;
@@ -152,9 +152,10 @@ export function renderChart(ctx, W, H, section, optsIn = {}) {
   for (const y of yt) { const py = sy(y); line(ctx, pL, py, pL + pW, py); }
   for (const x of xt) { const px = sx(x); line(ctx, px, pT, px, pT + pH); }
 
-  // earth fill
+  // earth fill (semi-transparent so the gridlines read through it)
   if (o.showEarthFill) {
     ctx.fillStyle = o.earthColor;
+    ctx.globalAlpha = 0.72;
     ctx.beginPath();
     const g = series[0];
     ctx.moveTo(sx(g.dist[0]), sy(g.val[0]));
@@ -163,6 +164,7 @@ export function renderChart(ctx, W, H, section, optsIn = {}) {
     ctx.lineTo(sx(g.dist[0]), sy(ymin));
     ctx.closePath();
     ctx.fill();
+    ctx.globalAlpha = 1;
   }
 
   // inundation between ground and the highest surface
