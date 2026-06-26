@@ -15,7 +15,7 @@ const PRESETS = {
   proposed: ["2-year", "100-year", "500-year", "2080 100-year"],
 };
 
-let state = { sections: [], canvases: [], order: "asc", styles: {}, longitudinal: null, view: "sections", legend: { anchor: "right-middle", offX: 0, offY: 0 } };
+let state = { sections: [], canvases: [], order: "asc", styles: { sections: {}, long: {} }, longitudinal: null, view: "sections", legend: { anchor: "right-middle", offX: 0, offY: 0 } };
 const LEGEND_POSITIONS = [["right-middle", "Right (middle)"], ["top-right", "Top-right"], ["bottom-right", "Bottom-right"], ["top-left", "Top-left"], ["bottom-left", "Bottom-left"], ["top-center", "Top-center"], ["bottom-center", "Bottom-center"], ["left-middle", "Left (middle)"]];
 const LEGEND_NUDGE = 24;   // canvas px per Move click
 
@@ -113,8 +113,9 @@ function generate() {
   state.view = "sections";
   renderResults(conditionLabel);
   $("download").disabled = state.sections.length === 0;
-  // tidy the rail: collapse the tall paste steps once charts exist
-  if (state.sections.length) ["step2", "step3", "historyPanel"].forEach((id) => ($(id).open = false));
+  // tidy the rail: collapse the shared summary + history (keep the cross-section
+  // builder open — it holds the display options, line styles, and download)
+  if (state.sections.length) ["step2", "historyPanel"].forEach((id) => ($(id).open = false));
 
   // save these inputs to local history (text from steps 1-3, not the charts)
   saveRun({ ...currentInputs(), count: result.sections.length });
@@ -128,11 +129,15 @@ function currentInputs() {
     events: eventRows(),
     summary: $("summary").value,
     profile: $("profile").value,
+    longitudinal: $("longitudinalPaste").value,
+    stationStart: $("stationStart").value,
     options: {
       optEarth: $("optEarth").checked,
       optWater: $("optWater").checked,
       optThalweg: $("optThalweg").checked,
       optLegend: $("optLegend").checked,
+      loptEarth: $("loptEarth").checked,
+      loptWater: $("loptWater").checked,
       styles: state.styles,
     },
   };
@@ -155,7 +160,7 @@ function chartOptions() {
     showInundation: $("optWater").checked,
     showThalweg: $("optThalweg").checked,
     legendInside: $("optLegend").checked,
-    styles: state.styles,
+    styles: state.styles.sections,
   };
 }
 
@@ -185,11 +190,7 @@ function renderResults(conditionLabel) {
   nav.appendChild(chips);
   wrap.appendChild(nav);
 
-  // line-styles panel lives in the controls rail (global), repopulated each render
-  const styleHost = $("lineStylesHost");
-  styleHost.innerHTML = "";
-  const stylePanel = buildStylePanel();
-  if (stylePanel) styleHost.appendChild(stylePanel);
+  refreshStylePanel("sections");   // cross-section line styles (in the step-3 group)
 
   // horizontal slider of charts
   const strip = document.createElement("div");
@@ -372,7 +373,6 @@ function genLongitudinal() {
   const msgs = warnings.map((w) => ({ type: "warn", text: w }));
   msgs.unshift({ type: "ok", text: `Longitudinal profile: ground + ${sec.surfaces.length} water surface${sec.surfaces.length === 1 ? "" : "s"} along the reach.` });
   setMessages(msgs);
-  $("step5").open = false;
   renderView();
 }
 
@@ -385,23 +385,23 @@ function longitudinalMarkers(stationStart) {
 }
 
 function longitudinalOptions() {
-  const base = chartOptions();
   const startRaw = parseFloat($("stationStart").value);
   // auto start station: round the lowest cross-section station down to 100 ft
   const { rows } = parseSummary($("summary").value || "");
   const autoStart = rows.length ? Math.floor(Math.min(...rows.map((r) => r.station)) / 100) * 100 : 0;
   const stationStart = Number.isFinite(startRaw) ? startRaw : autoStart;
   return {
-    ...base,
     xTitle: "Station (feet)",
     note: "",                // self-evident on a longitudinal profile; frees space for X-section labels
+    showEarthFill: $("loptEarth").checked,           // longitudinal's own display options
+    showInundation: $("loptWater").checked,
+    showThalweg: false,      // single bed minimum isn't meaningful over a whole reach
     legendAnchor: state.legend.anchor,
     legendOffX: state.legend.offX,
     legendOffY: state.legend.offY,
     stationStart,
     markers: longitudinalMarkers(stationStart),
-    showInundation: false,   // gappy WSE under structures → off for the reach view
-    showThalweg: false,      // single bed minimum isn't meaningful over a whole reach
+    styles: state.styles.long,
   };
 }
 
@@ -431,14 +431,13 @@ function renderLongitudinal() {
     <label class="inline">Legend
       <select class="leg-pos">${LEGEND_POSITIONS.map(([v, l]) => `<option value="${v}"${v === state.legend.anchor ? " selected" : ""}>${l}</option>`).join("")}</select>
     </label>
-    <span class="leg-nudge"><span class="ctrl-lbl">Move</span>
+    <span class="leg-nudge"><span class="ctrl-lbl">Move legend</span>
       <button class="ghost small" data-d="L" title="Left">◀</button>
       <button class="ghost small" data-d="U" title="Up">▲</button>
       <button class="ghost small" data-d="D" title="Down">▼</button>
       <button class="ghost small" data-d="R" title="Right">▶</button>
       <button class="ghost small" data-d="0" title="Reset position">reset</button>
-    </span>
-    <button class="ghost small leg-dl">Download PNG</button>`;
+    </span>`;
   actions.querySelector(".leg-pos").addEventListener("change", (e) => { state.legend.anchor = e.target.value; drawLongitudinal(); });
   actions.querySelectorAll(".leg-nudge button").forEach((b) => b.addEventListener("click", () => {
     const d = b.dataset.d;
@@ -449,17 +448,11 @@ function renderLongitudinal() {
     else if (d === "D") state.legend.offY += LEGEND_NUDGE;
     drawLongitudinal();
   }));
-  actions.querySelector(".leg-dl").addEventListener("click", () => {
-    const a = document.createElement("a");
-    a.download = `${($("condition").value.trim() || "Appendix H").replace(/[^\w]+/g, "_")}_Longitudinal_Profile.png`;
-    a.href = longCanvas.toDataURL("image/png"); a.click();
-  });
   card.appendChild(actions);
   wrap.appendChild(card);
   drawLongitudinal();
-  // style panel still reflects the shared events (line color/type/thickness)
-  const styleHost = $("lineStylesHost"); styleHost.innerHTML = "";
-  const sp = buildStylePanel(); if (sp) styleHost.appendChild(sp);
+  refreshStylePanel("long");          // longitudinal's own line styles (in the step-4 group)
+  $("dlLong").disabled = false;       // enable the rail "Download PNG"
 }
 
 // segmented control to switch the main area between the two views
@@ -485,8 +478,9 @@ function renderView() {
 // fully customizable: color + line type + thickness. Applied consistently across
 // every section chart and its legend. Lets close flows (e.g. 42 vs 43 CFS) be told
 // apart by contrasting color, line type, AND weight.
-function lineDescriptors() {
-  const sample = (state.view === "long" && state.longitudinal) ? state.longitudinal : (state.sections[0] || state.longitudinal);
+// view = "sections" | "long" — each figure type has its own line styles
+function lineDescriptors(view) {
+  const sample = view === "long" ? state.longitudinal : state.sections[0];
   if (!sample) return [];
   const out = [{ key: "__ground__", label: sample.ground.name || "Ground", defColor: DEFAULTS.groundColor, defStyle: "solid", defWidth: DEFAULT_WIDTHS.ground }];
   const n = sample.surfaces.length;
@@ -494,19 +488,19 @@ function lineDescriptors() {
     const def = surfaceColor(s.name, i, n);
     out.push({ key: s.name, label: s.name, defColor: def.color, defStyle: def.dash ? "dashed" : "solid", defWidth: DEFAULT_WIDTHS.surface });
   });
-  if (state.sections.some((sec) => sec.structure)) {
+  if (view === "sections" && state.sections.some((sec) => sec.structure)) {
     out.push({ key: "__culvert__", label: "Culvert", defColor: DEFAULTS.structureColor, defStyle: "solid", defWidth: DEFAULT_WIDTHS.culvert });
   }
   return out;
 }
-function buildStylePanel() {
-  const lines = lineDescriptors();
+function buildStylePanel(view) {
+  const lines = lineDescriptors(view), styles = state.styles[view];
   if (!lines.length) return null;
   const wrap = document.createElement("details");
   wrap.className = "style-panel";
   wrap.open = false;
   const rows = lines.map((ln) => {
-    const cur = state.styles[ln.key] || {};
+    const cur = styles[ln.key] || {};
     const color = rgbToHex(cur.color || ln.defColor);
     const style = cur.style || ln.defStyle;
     const width = cur.width != null ? cur.width : ln.defWidth;
@@ -519,22 +513,30 @@ function buildStylePanel() {
       <label class="ls-wlabel">w<input type="number" class="ls-width" min="0.5" max="8" step="0.5" value="${width}" title="Line thickness" /></label>
     </div>`;
   }).join("");
-  wrap.innerHTML = `<summary>Line styles <span class="muted">— color, line type &amp; thickness per line</span></summary>
-    <div class="style-rows">${rows}</div>`;
+  wrap.innerHTML = `<summary>Per-line color, type &amp; thickness</summary><div class="style-rows">${rows}</div>`;
+  wrap.open = true;
   wrap.querySelectorAll(".style-row").forEach((row) => {
     const key = row.dataset.key;
-    row.querySelector(".ls-color").addEventListener("input", (e) => setStyle(key, { color: e.target.value }));
-    row.querySelector(".ls-style").addEventListener("change", (e) => setStyle(key, { style: e.target.value }));
+    row.querySelector(".ls-color").addEventListener("input", (e) => setStyle(view, key, { color: e.target.value }));
+    row.querySelector(".ls-style").addEventListener("change", (e) => setStyle(view, key, { style: e.target.value }));
     row.querySelector(".ls-width").addEventListener("input", (e) => {
       const w = parseFloat(e.target.value);
-      setStyle(key, { width: isNaN(w) ? undefined : w });
+      setStyle(view, key, { width: isNaN(w) ? undefined : w });
     });
   });
   return wrap;
 }
-function setStyle(key, patch) {
-  state.styles[key] = { ...(state.styles[key] || {}), ...patch };
-  redrawAll();
+function setStyle(view, key, patch) {
+  state.styles[view][key] = { ...(state.styles[view][key] || {}), ...patch };
+  if (view === "long") drawLongitudinal(); else redrawAll();
+}
+// (re)populate a figure group's line-style host from its built data
+function refreshStylePanel(view) {
+  const host = $(view === "long" ? "lineStylesHostLong" : "lineStylesHostSections");
+  if (!host) return;
+  const sp = buildStylePanel(view);
+  host.innerHTML = sp ? "" : '<p class="hint tiny">Appears after you generate.</p>';
+  if (sp) host.appendChild(sp);
 }
 
 // ---------- download ----------
@@ -609,16 +611,18 @@ function restart() {
   renderEventList(PRESETS.existing);
   $("summary").value = "";
   $("profile").value = "";
-  ["optEarth", "optWater", "optThalweg", "optLegend"].forEach((id) => ($(id).checked = true));
-  state = { sections: [], canvases: [], order: "asc", styles: {}, longitudinal: null, view: "sections", legend: { anchor: "right-middle", offX: 0, offY: 0 } };
+  ["optEarth", "optWater", "optThalweg", "optLegend", "loptEarth"].forEach((id) => ($(id).checked = true));
+  $("loptWater").checked = false;
+  state = { sections: [], canvases: [], order: "asc", styles: { sections: {}, long: {} }, longitudinal: null, view: "sections", legend: { anchor: "right-middle", offX: 0, offY: 0 } };
   $("results").innerHTML = "";
-  $("lineStylesHost").innerHTML = "";
-  $("longitudinalPaste").value = "";
+  $("longitudinalPaste").value = ""; $("stationStart").value = "";
+  refreshStylePanel("sections"); refreshStylePanel("long");
   $("resultsPlaceholder").hidden = false;
-  ["step1", "step2", "step3", "step4"].forEach((id) => ($(id).open = true));
+  ["step1", "step2", "step3"].forEach((id) => ($(id).open = true));
+  $("step4").open = false;
   $("messages").innerHTML = "";
   $("autoCount").textContent = "";
-  $("download").disabled = true;
+  $("download").disabled = true; $("dlLong").disabled = true;
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -672,12 +676,18 @@ function loadRun(run) {
   renderEventList(run.events && run.events.length ? run.events : PRESETS.existing);
   $("summary").value = run.summary || "";
   $("profile").value = run.profile || "";
+  $("longitudinalPaste").value = run.longitudinal || "";
+  $("stationStart").value = run.stationStart || "";
   const o = run.options || {};
   $("optEarth").checked = o.optEarth !== false;
   $("optWater").checked = o.optWater !== false;
   $("optThalweg").checked = o.optThalweg !== false;
   $("optLegend").checked = o.optLegend !== false;
-  state.styles = o.styles && typeof o.styles === "object" ? { ...o.styles } : {};
+  $("loptEarth").checked = o.loptEarth !== false;
+  $("loptWater").checked = o.loptWater === true;
+  // styles: support the new {sections,long} shape and legacy flat maps
+  const s = o.styles && typeof o.styles === "object" ? o.styles : {};
+  state.styles = (s.sections || s.long) ? { sections: { ...(s.sections || {}) }, long: { ...(s.long || {}) } } : { sections: { ...s }, long: {} };
   updateAutoCount();
   // refill the inputs only — let the user review, then click Generate.
   $("historyPanel").open = false;
@@ -718,9 +728,17 @@ document.addEventListener("keydown", (e) => {
 
 $("generate").addEventListener("click", generate);
 $("genLongitudinal").addEventListener("click", genLongitudinal);
+$("dlLong").addEventListener("click", () => {
+  if (!longCanvas) return;
+  const a = document.createElement("a");
+  a.download = `${($("condition").value.trim() || "Appendix H").replace(/[^\w]+/g, "_")}_Longitudinal_Profile.png`;
+  a.href = longCanvas.toDataURL("image/png"); a.click();
+});
 $("stationStart").addEventListener("input", () => { if (state.view === "long") drawLongitudinal(); });
 $("saveInputs").addEventListener("click", saveInputs);
 $("download").addEventListener("click", download);
+// cross-section display options redraw the strip; longitudinal options redraw the profile
 ["optEarth", "optWater", "optThalweg", "optLegend"].forEach((id) => $(id).addEventListener("change", redrawAll));
+["loptEarth", "loptWater"].forEach((id) => $(id).addEventListener("change", () => state.longitudinal && drawLongitudinal()));
 $("summary").addEventListener("input", updateAutoCount);
 $("profile").addEventListener("input", updateAutoCount);

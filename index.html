@@ -73,8 +73,13 @@
         <textarea id="summary" rows="5" placeholder="Reach	Station	Min&#10;Hood Canal	1047.09	54.78&#10;Hood Canal	1065.36	55.68"></textarea>
       </details>
 
-      <details class="group" id="step3" open>
-        <summary><span class="num">3</span> Paste the SMS profile values
+      <div class="shared-actions">
+        <button id="saveInputs" class="ghost small">Save inputs</button>
+        <span class="shared-hint">Saves the inputs above to reuse later (find them under <strong>0 · Saved inputs</strong>).</span>
+      </div>
+
+      <details class="group figure-group" id="step3" open>
+        <summary><span class="num">3</span> Station cross-sections
           <span class="infotip">
             <button type="button" class="info-i" aria-label="How to extract the profile values">i</button>
             <span class="info-pop">In SMS, extract the cross-section profiles:
@@ -92,38 +97,45 @@
             </span>
           </span>
         </summary>
-        <textarea id="profile" rows="8" placeholder="Distance	Value	Distance	Value ...&#10;1	0.0	74.60	10.87	67.78 ..."></textarea>
-      </details>
-
-      <details class="group" id="step4" open>
-        <summary><span class="num">4</span> Display options</summary>
+        <label class="blk-lbl">Profile values</label>
+        <textarea id="profile" rows="7" placeholder="Distance	Value	Distance	Value ...&#10;1	0.0	74.60	10.87	67.78 ..."></textarea>
+        <div class="subhead">Display options</div>
         <div class="opts">
           <label class="chk"><input type="checkbox" id="optEarth" checked /> Earth fill</label>
           <label class="chk"><input type="checkbox" id="optWater" checked /> Inundation shading</label>
           <label class="chk"><input type="checkbox" id="optThalweg" checked /> Thalweg marker</label>
           <label class="chk"><input type="checkbox" id="optLegend" checked /> Smart legend placement</label>
         </div>
+        <div class="subhead">Line styles</div>
+        <div id="lineStylesHostSections" class="ls-host"><p class="hint tiny">Appears after you generate.</p></div>
+        <div class="group-actions">
+          <button id="generate" class="primary">Generate cross-sections</button>
+          <button id="download" class="primary alt" disabled>Download Word document</button>
+        </div>
       </details>
 
-      <details class="group" id="step5">
-        <summary><span class="num">5</span> Longitudinal profile <span class="muted">(optional)</span>
+      <details class="group figure-group" id="step4">
+        <summary><span class="num">4</span> Longitudinal profile <span class="muted">(optional)</span>
           <span class="infotip">
             <button type="button" class="info-i" aria-label="About the longitudinal profile">i</button>
             <span class="info-pop">A single profile along the stream centerline (ground + each flood WSE vs. stationing), with your cross-section locations marked. Same SMS extraction as step 3, but choose <strong>Observation Profile</strong> for the <strong>centerline/thalweg arc</strong> instead of the cross-sections, then paste the values here.</span>
           </span>
         </summary>
         <label>Start station (ft) <input type="number" id="stationStart" class="small-input" step="1" placeholder="auto" /></label>
+        <label class="blk-lbl">Centerline profile values</label>
         <textarea id="longitudinalPaste" rows="6" placeholder="Distance	Value	Distance	Value ...&#10;1	0.32	51.93	0.32	53.29 ..."></textarea>
-        <button id="genLongitudinal" class="primary">Generate longitudinal profile</button>
+        <div class="subhead">Display options</div>
+        <div class="opts">
+          <label class="chk"><input type="checkbox" id="loptEarth" checked /> Earth fill</label>
+          <label class="chk"><input type="checkbox" id="loptWater" /> Inundation shading</label>
+        </div>
+        <div class="subhead">Line styles</div>
+        <div id="lineStylesHostLong" class="ls-host"><p class="hint tiny">Appears after you generate.</p></div>
+        <div class="group-actions">
+          <button id="genLongitudinal" class="primary">Generate longitudinal profile</button>
+          <button id="dlLong" class="primary alt" disabled>Download PNG</button>
+        </div>
       </details>
-
-      <div id="lineStylesHost"></div>
-
-      <div class="actions">
-        <button id="generate" class="primary">Generate charts</button>
-        <button id="saveInputs" class="ghost">Save inputs</button>
-        <button id="download" class="primary alt" disabled>Download Word document</button>
-      </div>
     </aside>
   </div>
 

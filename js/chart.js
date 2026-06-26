@@ -167,7 +167,8 @@ export function renderChart(ctx, W, H, section, optsIn = {}) {
     ctx.globalAlpha = 1;
   }
 
-  // inundation between ground and the highest surface
+  // inundation between ground and the highest surface (filled in segments so it
+  // breaks across null gaps where a water surface goes dry, e.g. under a culvert)
   if (o.showInundation && section.surfaces.length) {
     const top = series[series.length - 1];
     const g = series[0];
@@ -175,20 +176,21 @@ export function renderChart(ctx, W, H, section, optsIn = {}) {
     const x1 = Math.min(max(top.dist), max(g.dist));
     ctx.fillStyle = o.waterColor;
     ctx.globalAlpha = 0.6;
-    ctx.beginPath();
-    let started = false;
-    const N = 240;
-    const pts = [];
+    const N = 240, pts = [];
     for (let k = 0; k <= N; k++) {
       const x = x0 + ((x1 - x0) * k) / N;
-      const gy = interp(g.dist, g.val, x);
-      const ty = interp(top.dist, top.val, x);
-      if (ty > gy) pts.push([x, gy, ty]);
+      const gy = interpSafe(g.dist, g.val, x), ty = interpSafe(top.dist, top.val, x);
+      pts.push({ x, gy, ty, ok: Number.isFinite(gy) && Number.isFinite(ty) && ty > gy });
     }
-    for (const [x, , ty] of pts) { const px = sx(x), py = sy(ty); started ? ctx.lineTo(px, py) : (ctx.moveTo(px, py), (started = true)); }
-    for (let i = pts.length - 1; i >= 0; i--) { const [x, gy] = pts[i]; ctx.lineTo(sx(x), sy(gy)); }
-    ctx.closePath();
-    ctx.fill();
+    for (let i = 0; i <= N; i++) {
+      if (!pts[i].ok) continue;
+      let j = i; while (j + 1 <= N && pts[j + 1].ok) j++;          // contiguous wet run i..j
+      ctx.beginPath();
+      for (let k = i; k <= j; k++) { const p = pts[k]; k === i ? ctx.moveTo(sx(p.x), sy(p.ty)) : ctx.lineTo(sx(p.x), sy(p.ty)); }
+      for (let k = j; k >= i; k--) { const p = pts[k]; ctx.lineTo(sx(p.x), sy(p.gy)); }
+      ctx.closePath(); ctx.fill();
+      i = j;
+    }
     ctx.globalAlpha = 1;
   }
 
@@ -410,6 +412,17 @@ function interp(xs, ys, x) {
     return ys[i - 1] + t * (ys[i] - ys[i - 1]);
   }
   return ys[ys.length - 1];
+}
+// like interp but returns NaN across null gaps (so fills break instead of dropping to 0)
+function interpSafe(xs, ys, x) {
+  if (x <= xs[0]) return ys[0] == null ? NaN : ys[0];
+  if (x >= xs[xs.length - 1]) { const v = ys[ys.length - 1]; return v == null ? NaN : v; }
+  for (let i = 1; i < xs.length; i++) if (x <= xs[i]) {
+    const a = ys[i - 1], b = ys[i];
+    if (a == null || b == null) return NaN;
+    return a + ((x - xs[i - 1]) / (xs[i] - xs[i - 1])) * (b - a);
+  }
+  return NaN;
 }
 function trimNum(n) { return Math.abs(n) >= 100 ? Math.round(n) : Math.round(n * 100) / 100; }
 // Engineering stationing: feet → "SS+FF" (e.g. 1047 → "10+47").

@@ -588,25 +588,31 @@ The generated package layout: `[Content_Types].xml`, `_rels/.rels`,
 **results area** (`<main class="results-area">`, left) holds the charts, and a
 **controls rail** (`<aside class="controls">`, right) holds collapsible numbered
 `<details class="group">` steps. Global feature growth lands in the rail as new
-groups, not as more page scroll; **per-chart** controls stay on each card. Steps 2
-& 3 (the tall paste boxes) auto-collapse after a successful Generate; the rail
-stacks above the results on narrow screens (`@media max-width: 1000px`).
+groups, not as more page scroll; **per-chart** controls stay on each card. The
+rail stacks above the results on narrow screens (`@media max-width: 1000px`).
 
-- **Header**: title + **↺ Restart** button (clears all inputs to defaults;
-  confirms only when there is data to lose).
-- **Saved inputs** panel (collapsible, rail group 0) — see §14.
-- **Step 1 — Condition & flow events**: condition text; **Existing/Proposed**
-  presets; an ordered, add/remove/reorder **event list** (increasing discharge).
-- **Step 2 — Summary Table** paste box.
-- **Step 3 — Profile values** paste box.
-- **Auto-count hint**: as you paste, shows `Detected N cross sections × M
-  datasets …` or a warning if `pairs ÷ sections` isn't a whole number.
-- **Step 4 — Display options**: checkboxes **Earth fill**, **Inundation shading**,
-  **Thalweg marker**, **Smart legend placement**.
-- **Step 5 — Longitudinal profile** (optional): paste the SMS *Observation
-  Profile* for the **centerline/thalweg arc** (same export as step 3, different
-  arc) plus an optional **Start station (ft)**; **Generate longitudinal profile**
-  renders one chart of ground + each flood WSE vs. **stationing** along the reach.
+The rail is **shared setup (0–2)** then **two self-contained figure builders
+(3, 4)** — each owns its paste, **display options**, **line styles**, and
+generate/download. Instruction lists live behind an **"i" infotip** in each step
+heading. A main-area toggle flips the view between the two outputs.
+
+- **Header**: title + **↺ Restart** button (clears all inputs to defaults).
+- **0 · Saved inputs** panel — see §14. **Save inputs** is a shared action below
+  step 2 (saves the inputs above for reuse).
+- **1 · Condition & flow events**: condition text; **Existing/Proposed** presets;
+  an ordered, add/remove/reorder **event list** (shared by both figure types).
+- **2 · SMS Summary Table** paste (stations: cross-section matching + profile
+  markers). An **auto-count hint** flags non-whole `pairs ÷ sections`.
+- **3 · Station cross-sections**: profile-values paste · **display options**
+  (Earth fill / Inundation / Thalweg / Smart legend) · **line styles** (per-event
+  color/type/thickness) · **[Generate cross-sections] [Download Word]**. Stays
+  open after Generate (it holds the live controls); step 2 + history auto-collapse.
+- **4 · Longitudinal profile** (optional): centerline-values paste + **Start
+  station** · **display options** (Earth fill / Inundation — gap-aware fill) ·
+  **line styles** · **[Generate longitudinal] [Download PNG]**. The legend
+  placement toolbar sits on the figure. Paste the SMS *Observation Profile* for
+  the **centerline/thalweg arc** (same export as step 3, different arc);
+  it renders ground + each flood WSE vs. **stationing** along the reach.
   Parsed with `parseProfile(text,{keepGaps:true})` (keeps `-9999` as null so WSE
   lines **break** where they go dry under a structure) and built by
   `buildLongitudinal` (ground = lowest-minimum dataset; WSE ranked by mean and

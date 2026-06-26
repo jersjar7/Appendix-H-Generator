@@ -6,15 +6,15 @@ const LONG = readFileSync(new URL("../fixtures_longitudinal.txt", import.meta.ur
 
 test("longitudinal: paste → generate one profile chart with a PNG download", async ({ page }) => {
   await openApp(page);
-  await page.evaluate(() => (document.querySelector("#step5").open = true));
+  await page.evaluate(() => (document.querySelector("#step4").open = true));
   await page.fill("#stationStart", "1000");
   await page.fill("#longitudinalPaste", LONG);
   await page.locator("#genLongitudinal").scrollIntoViewIfNeeded();
   await page.locator("#genLongitudinal").click({ force: true });
 
-  // one big profile canvas + a PNG download button, and the ok banner
+  // one big profile canvas; the rail PNG download enables; ok banner
   await expect(page.locator(".long-card canvas")).toHaveCount(1);
-  await expect(page.locator(".long-actions .leg-dl")).toContainText(/PNG/i);
+  await expect(page.locator("#dlLong")).toBeEnabled();
   await expect(page.locator("#messages")).toContainText(/Longitudinal profile/i);
 
   const snap = () => page.locator(".long-card canvas").evaluate((c) => c.toDataURL());

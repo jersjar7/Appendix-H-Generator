@@ -97,6 +97,14 @@ textarea { resize: vertical; font-family: ui-monospace, Menlo, Consolas, monospa
 .events li { display: flex; gap: 8px; align-items: center; }
 .events li input { flex: 1; }
 .events li .idx { color: var(--muted); width: 22px; font-size: 0.8rem; }
+/* figure-builder group internals (per-type display options, line styles, actions) */
+.shared-actions { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.shared-actions .shared-hint { color: var(--muted); font-size: 0.76rem; }
+.subhead { font-weight: 700; font-size: 0.78rem; color: #2a3650; text-transform: uppercase; letter-spacing: 0.03em; margin: 4px 0 6px; padding-top: 10px; border-top: 1px solid var(--line); }
+.blk-lbl { font-weight: 600; font-size: 0.82rem; color: #2a3650; margin: 0 0 4px; }
+.ls-host .hint.tiny { margin: 0; font-size: 0.78rem; }
+.group-actions { display: flex; flex-direction: column; gap: 8px; padding-top: 4px; }
+.group-actions button { width: 100%; }
 .opts { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-bottom: 14px; }
 .opts label { margin: 0; }
 .chk { display: flex; align-items: center; gap: 6px; color: var(--ink); font-size: 0.88rem; }
@@ -142,7 +150,6 @@ button.mini { padding: 2px 8px; font-size: 0.8rem; background: #eef2f7; color: v
 .long-actions .leg-nudge { display: inline-flex; align-items: center; gap: 4px; font-size: 0.82rem; color: var(--muted); }
 .long-actions .leg-nudge .ctrl-lbl { margin-right: 2px; }
 .long-actions .leg-nudge button { padding: 4px 8px; }
-.long-actions .leg-dl { margin-left: auto; }
 .results-nav { margin-bottom: 12px; }
 .station-nav { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .style-panel { margin-top: 10px; border: 1px solid var(--line); border-radius: 6px; background: #f7fafc; padding: 6px 10px; }
