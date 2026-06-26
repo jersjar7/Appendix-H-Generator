@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "serve": "python3 -m http.server 8000",
-    "test:node": "node test/run.mjs && node test/matching.mjs && node test/history.mjs && node test/report.mjs && node test/trim.mjs && node test/e2e.mjs && node test/culvert_shapes.mjs",
+    "test:node": "node test/run.mjs && node test/matching.mjs && node test/history.mjs && node test/report.mjs && node test/trim.mjs && node test/e2e.mjs && node test/culvert_shapes.mjs && node test/line_styles.mjs",
     "test:ui": "playwright test",
     "test:ui:headed": "playwright test --headed",
     "test": "npm run test:node && npm run test:ui"
