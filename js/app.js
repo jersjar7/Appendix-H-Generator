@@ -651,9 +651,11 @@ function renderHistory() {
         <div class="htitle">${escapeAttr(run.condition || "Saved inputs")}${count}</div>
         <div class="hsub">${escapeAttr(events)} — ${fmtDate(run.savedAt)}</div>
       </div>
-      <button class="mini report" title="Download a .txt diagnostic (inputs + station matching + warnings)">Report</button>
-      <button class="mini load">Load</button>
-      <button class="mini del">Delete</button>`;
+      <div class="hactions">
+        <button class="mini report" title="Download a .txt diagnostic (inputs + station matching + warnings)">Report</button>
+        <button class="mini load">Load</button>
+        <button class="mini del">Delete</button>
+      </div>`;
     li.querySelector(".report").addEventListener("click", () => downloadReport(run));
     li.querySelector(".load").addEventListener("click", () => loadRun(run));
     li.querySelector(".del").addEventListener("click", () => {
