@@ -256,7 +256,9 @@ export function renderChart(ctx, W, H, section, optsIn = {}) {
       line(ctx, px, pT, px, pT + pH); ctx.setLineDash([]);
       const label = m.label, tw = ctx.measureText(label).width, bw = tw + 10, bh = Math.round(fontPx * 1.25);
       let bx = px - bw / 2; bx = Math.max(pL + 1, Math.min(bx, pL + pW - bw - 1));
-      const by = i % 2 === 0 ? pT + 3 : pT + pH - bh - 3;       // alternate top / bottom
+      // label band: "top" / "bottom" force one edge; default alternates to dodge collisions
+      const top = pT + 3, bottom = pT + pH - bh - 3;
+      const by = o.markerLabels === "top" ? top : o.markerLabels === "bottom" ? bottom : (i % 2 === 0 ? top : bottom);
       ctx.fillStyle = "rgba(255,255,255,0.95)"; ctx.strokeStyle = "#9a9a9a"; ctx.lineWidth = 1;
       roundRect(ctx, bx, by, bw, bh, 3); ctx.fill(); ctx.stroke();
       ctx.fillStyle = "#333"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
