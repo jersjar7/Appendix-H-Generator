@@ -698,6 +698,22 @@ document.querySelectorAll("[data-preset]").forEach((b) =>
     $("condition").value = b.dataset.preset === "proposed" ? "Proposed Conditions" : "Existing Conditions";
   })
 );
+// info tooltips: click the "i" to pin open, click-away / Esc to close
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".info-i");
+  if (btn) {
+    e.preventDefault(); e.stopPropagation();          // don't toggle the parent <summary>
+    const tip = btn.parentElement, isOpen = tip.classList.contains("open");
+    document.querySelectorAll(".infotip.open").forEach((t) => t.classList.remove("open"));
+    if (!isOpen) tip.classList.add("open");
+  } else if (!e.target.closest(".info-pop")) {
+    document.querySelectorAll(".infotip.open").forEach((t) => t.classList.remove("open"));
+  }
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") document.querySelectorAll(".infotip.open").forEach((t) => t.classList.remove("open"));
+});
+
 $("generate").addEventListener("click", generate);
 $("genLongitudinal").addEventListener("click", genLongitudinal);
 $("stationStart").addEventListener("input", () => { if (state.view === "long") drawLongitudinal(); });

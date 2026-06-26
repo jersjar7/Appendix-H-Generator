@@ -36,7 +36,12 @@
       </details>
 
       <details class="group" id="step1" open>
-        <summary><span class="num">1</span> Condition &amp; flow events</summary>
+        <summary><span class="num">1</span> Condition &amp; flow events
+          <span class="infotip">
+            <button type="button" class="info-i" aria-label="About flow events">i</button>
+            <span class="info-pop">List the flow events <strong>in increasing order of discharge</strong> — exactly the surfaces you exported (Ground is automatic). Add or remove as many as you need.</span>
+          </span>
+        </summary>
         <div class="row">
           <label>Condition label (used in captions)
             <input id="condition" type="text" value="Existing Conditions" />
@@ -47,37 +52,46 @@
             <button class="ghost" data-preset="proposed">Proposed (+2080)</button>
           </div>
         </div>
-        <p class="hint">List the flow events <strong>in increasing order of discharge</strong> — exactly the surfaces you exported (Ground is automatic). Add or remove as many as you need.</p>
         <ul id="eventList" class="events"></ul>
         <button id="addEvent" class="ghost small">+ Add event</button>
         <p id="autoCount" class="auto"></p>
       </details>
 
       <details class="group" id="step2" open>
-        <summary><span class="num">2</span> Paste the SMS Summary Table</summary>
-        <p class="hint">In SMS, get the stations + thalweg (Z&nbsp;Min) used to match each cross section:</p>
-        <ol class="hint-list">
-          <li>Right-click the <strong>1D FHD reporting coverage</strong> → <strong>Summary Table</strong>.</li>
-          <li>Click <strong>Generate Table</strong>.</li>
-          <li>Click <strong>Copy to Clipboard</strong>, then paste below.</li>
-        </ol>
+        <summary><span class="num">2</span> Paste the SMS Summary Table
+          <span class="infotip">
+            <button type="button" class="info-i" aria-label="How to get the Summary Table">i</button>
+            <span class="info-pop">In SMS, get the stations + thalweg (Z&nbsp;Min) used to match each cross section:
+              <ol>
+                <li>Right-click the <strong>1D FHD reporting coverage</strong> → <strong>Summary Table</strong>.</li>
+                <li>Click <strong>Generate Table</strong>.</li>
+                <li>Click <strong>Copy to Clipboard</strong>, then paste below.</li>
+              </ol>
+            </span>
+          </span>
+        </summary>
         <textarea id="summary" rows="5" placeholder="Reach	Station	Min&#10;Hood Canal	1047.09	54.78&#10;Hood Canal	1065.36	55.68"></textarea>
       </details>
 
       <details class="group" id="step3" open>
-        <summary><span class="num">3</span> Paste the SMS profile values</summary>
-        <p class="hint">In SMS, extract the cross-section profiles:</p>
-        <ol class="hint-list">
-          <li>Activate the <strong>observation cross-sections coverage</strong> (Existing or Proposed).</li>
-          <li>Top menu <strong>Display → Plot Wizard</strong>.</li>
-          <li>Choose plot type <strong>Observation Profile</strong>, then <strong>Next</strong>.</li>
-          <li>Confirm the coverage is the observation cross-sections, and that <strong>all arcs are selected / active</strong>.</li>
-          <li>Under <strong>Data sets</strong>, switch from <em>Active</em> to <strong>Specified</strong>, pick the <strong>mesh</strong>, then check the <strong>terrain Z (ground)</strong> plus each flood <strong>water-surface elevation</strong> you need (2-year, 100-year, 500-year, …).</li>
-          <li>Under <strong>Time steps</strong>, choose <strong>Specified</strong> and check <strong>only the last time step</strong> of the simulation.</li>
-          <li>Click <strong>Finish</strong> — the profile plot appears.</li>
-          <li>Right-click the plot → <strong>View Values</strong> → <strong>Ctrl+A</strong>, <strong>Ctrl+C</strong>.</li>
-          <li>Paste below.</li>
-        </ol>
+        <summary><span class="num">3</span> Paste the SMS profile values
+          <span class="infotip">
+            <button type="button" class="info-i" aria-label="How to extract the profile values">i</button>
+            <span class="info-pop">In SMS, extract the cross-section profiles:
+              <ol>
+                <li>Activate the <strong>observation cross-sections coverage</strong> (Existing or Proposed).</li>
+                <li>Top menu <strong>Display → Plot Wizard</strong>.</li>
+                <li>Choose plot type <strong>Observation Profile</strong>, then <strong>Next</strong>.</li>
+                <li>Confirm the coverage is the observation cross-sections, and that <strong>all arcs are selected / active</strong>.</li>
+                <li>Under <strong>Data sets</strong>, switch from <em>Active</em> to <strong>Specified</strong>, pick the <strong>mesh</strong>, then check the <strong>terrain Z (ground)</strong> plus each flood <strong>water-surface elevation</strong> you need (2-year, 100-year, 500-year, …).</li>
+                <li>Under <strong>Time steps</strong>, choose <strong>Specified</strong> and check <strong>only the last time step</strong> of the simulation.</li>
+                <li>Click <strong>Finish</strong> — the profile plot appears.</li>
+                <li>Right-click the plot → <strong>View Values</strong> → <strong>Ctrl+A</strong>, <strong>Ctrl+C</strong>.</li>
+                <li>Paste below.</li>
+              </ol>
+            </span>
+          </span>
+        </summary>
         <textarea id="profile" rows="8" placeholder="Distance	Value	Distance	Value ...&#10;1	0.0	74.60	10.87	67.78 ..."></textarea>
       </details>
 
@@ -92,8 +106,12 @@
       </details>
 
       <details class="group" id="step5">
-        <summary><span class="num">5</span> Longitudinal profile <span class="muted">(optional)</span></summary>
-        <p class="hint">A single profile along the stream centerline (ground + each flood WSE vs. stationing), with your cross-section locations marked. Same SMS extraction as step 3, but choose <strong>Observation Profile</strong> for the <strong>centerline/thalweg arc</strong> instead of the cross-sections, then paste the values here.</p>
+        <summary><span class="num">5</span> Longitudinal profile <span class="muted">(optional)</span>
+          <span class="infotip">
+            <button type="button" class="info-i" aria-label="About the longitudinal profile">i</button>
+            <span class="info-pop">A single profile along the stream centerline (ground + each flood WSE vs. stationing), with your cross-section locations marked. Same SMS extraction as step 3, but choose <strong>Observation Profile</strong> for the <strong>centerline/thalweg arc</strong> instead of the cross-sections, then paste the values here.</span>
+          </span>
+        </summary>
         <label>Start station (ft) <input type="number" id="stationStart" class="small-input" step="1" placeholder="auto" /></label>
         <textarea id="longitudinalPaste" rows="6" placeholder="Distance	Value	Distance	Value ...&#10;1	0.32	51.93	0.32	53.29 ..."></textarea>
         <button id="genLongitudinal" class="primary">Generate longitudinal profile</button>
