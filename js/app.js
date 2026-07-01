@@ -741,21 +741,70 @@ document.querySelectorAll("[data-preset]").forEach((b) =>
     $("condition").value = b.dataset.preset === "proposed" ? "Proposed Conditions" : "Existing Conditions";
   })
 );
-// info tooltips: click the "i" to pin open, click-away / Esc to close
+// ---- info tooltips: click to pin open, click-away / Esc to close ----
+const INFO_GAP = 8, INFO_MARGIN = 12;
+function closeInfoTip(tip) {
+  tip.classList.remove("open");
+  tip.querySelector(".info-i")?.setAttribute("aria-expanded", "false");
+}
+function closeInfoTips() {
+  document.querySelectorAll(".infotip.open").forEach(closeInfoTip);
+}
+function placeInfoTip(tip) {
+  const btn = tip?.querySelector(".info-i"), pop = tip?.querySelector(".info-pop");
+  if (!btn || !pop) return;
+
+  const btnRect = btn.getBoundingClientRect();
+  const previousDisplay = pop.style.display, previousVisibility = pop.style.visibility;
+  pop.style.display = "block";
+  pop.style.visibility = "hidden";
+  const popW = pop.offsetWidth, popH = pop.offsetHeight;
+  pop.style.display = previousDisplay;
+  pop.style.visibility = previousVisibility;
+
+  const vw = window.innerWidth, vh = window.innerHeight;
+  let left = btnRect.left + btnRect.width - popW;
+  let top = btnRect.bottom + INFO_GAP;
+
+  if (left + popW > vw - INFO_MARGIN) left = vw - INFO_MARGIN - popW;
+  if (left < INFO_MARGIN) left = INFO_MARGIN;
+  if (top + popH > vh - INFO_MARGIN) top = btnRect.top - INFO_GAP - popH;
+  if (top < INFO_MARGIN) top = INFO_MARGIN;
+
+  tip.style.setProperty("--info-pop-left", `${Math.round(left)}px`);
+  tip.style.setProperty("--info-pop-top", `${Math.round(top)}px`);
+}
+document.querySelectorAll(".infotip").forEach((tip) => {
+  const btn = tip.querySelector(".info-i"), pop = tip.querySelector(".info-pop");
+  btn?.setAttribute("aria-expanded", "false");
+  btn?.setAttribute("aria-haspopup", "dialog");
+  pop?.setAttribute("role", "dialog");
+  tip.addEventListener("pointerenter", () => placeInfoTip(tip));
+  tip.addEventListener("focusin", () => placeInfoTip(tip));
+});
 document.addEventListener("click", (e) => {
   const btn = e.target.closest(".info-i");
   if (btn) {
-    e.preventDefault(); e.stopPropagation();          // don't toggle the parent <summary>
+    e.preventDefault(); e.stopPropagation();          // don't toggle a parent <summary>
     const tip = btn.parentElement, isOpen = tip.classList.contains("open");
-    document.querySelectorAll(".infotip.open").forEach((t) => t.classList.remove("open"));
-    if (!isOpen) tip.classList.add("open");
+    closeInfoTips();
+    if (!isOpen) {
+      placeInfoTip(tip);
+      tip.classList.add("open");
+      btn.setAttribute("aria-expanded", "true");
+    }
   } else if (!e.target.closest(".info-pop")) {
-    document.querySelectorAll(".infotip.open").forEach((t) => t.classList.remove("open"));
+    closeInfoTips();
   }
 });
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") document.querySelectorAll(".infotip.open").forEach((t) => t.classList.remove("open"));
+  if (e.key === "Escape") closeInfoTips();
 });
+function refreshInfoTips() {
+  document.querySelectorAll(".infotip.open").forEach((tip) => placeInfoTip(tip));
+}
+window.addEventListener("resize", refreshInfoTips);
+window.addEventListener("scroll", refreshInfoTips, true);
 
 $("generate").addEventListener("click", generate);
 $("genLongitudinal").addEventListener("click", genLongitudinal);
