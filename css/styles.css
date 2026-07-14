@@ -124,10 +124,85 @@ button.ghost { background: #eef2f7; color: var(--accent-d); }
 button.ghost:hover { background: #e2e8f0; }
 button.ghost.small { padding: 5px 12px; font-size: 0.82rem; }
 button.mini { padding: 2px 8px; font-size: 0.8rem; background: #eef2f7; color: var(--accent-d); }
-#messages > div { padding: 10px 14px; border-radius: 8px; margin-bottom: 10px; font-size: 0.88rem; }
-.msg-warn { background: var(--warn-bg); border: 1px solid var(--warn-br); }
-.msg-err { background: var(--err-bg); border: 1px solid var(--err-br); }
-.msg-ok { background: #f0fdf4; border: 1px solid #86efac; }
+#messages {
+  position: fixed;
+  left: 18px;
+  bottom: 18px;
+  z-index: 140;
+  width: min(560px, calc(100vw - 36px));
+}
+#messages[hidden] { display: none; }
+.msg-panel {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 14px 36px rgba(15, 23, 42, 0.22);
+  overflow: hidden;
+}
+.msg-panel.ok { border-color: #86efac; }
+.msg-panel.warn { border-color: var(--warn-br); }
+.msg-panel.error { border-color: var(--err-br); }
+.msg-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 12px 12px 14px;
+}
+.msg-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--green);
+}
+.msg-panel.warn .msg-dot { background: #f59e0b; }
+.msg-panel.error .msg-dot { background: #dc2626; }
+.msg-title {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-size: 0.84rem;
+}
+.msg-title strong { color: var(--ink); font-size: 0.9rem; }
+.msg-title span {
+  color: #475569;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.msg-toggle, .msg-close {
+  border: 1px solid var(--line);
+  background: #f8fafc;
+  color: var(--accent-d);
+  padding: 5px 9px;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+.msg-close {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 999px;
+}
+.msg-details {
+  border-top: 1px solid var(--line);
+  background: #fffaf5;
+  max-height: min(42vh, 360px);
+  overflow: auto;
+  padding: 8px 14px 12px 34px;
+}
+.msg-details ol {
+  margin: 0;
+  padding-left: 16px;
+}
+.msg-details li {
+  margin: 7px 0;
+  font-size: 0.82rem;
+  line-height: 1.42;
+}
+.msg-details li.is-error { color: #991b1b; }
+.msg-details li.is-warn { color: #7c4a03; }
 .history-card { padding: 14px 20px; }
 .history-card summary { cursor: pointer; font-size: 1.05rem; list-style: revert; }
 .history-card .hcount { color: var(--muted); font-weight: 400; font-size: 0.85rem; }

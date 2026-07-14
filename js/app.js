@@ -18,6 +18,7 @@ const PRESETS = {
 let state = { sections: [], canvases: [], order: "asc", styles: { sections: {}, long: {} }, longitudinal: null, view: "sections", legend: { anchor: "right-middle", offX: 0, offY: 0 }, markerLabels: "auto", markerOverrides: {} };
 const LEGEND_POSITIONS = [["right-middle", "Right (middle)"], ["top-right", "Top-right"], ["bottom-right", "Bottom-right"], ["top-left", "Top-left"], ["bottom-left", "Bottom-left"], ["top-center", "Top-center"], ["bottom-center", "Bottom-center"], ["left-middle", "Left (middle)"]];
 const LEGEND_NUDGE = 24;   // canvas px per Move click
+let messageTimer = null;
 
 // Named line styles for the per-event picker (label → key matches chart.js LINE_STYLES).
 const STYLE_OPTIONS = [["solid", "Solid"], ["dashed", "Dashed"], ["longDash", "Long dash"], ["dashDot", "Dash-dot"], ["dotted", "Dotted"]];
@@ -70,13 +71,61 @@ function renderEventList(values) {
 // ---------- messages ----------
 function setMessages(items) {
   const box = $("messages");
-  box.innerHTML = "";
-  for (const m of items) {
-    const d = document.createElement("div");
-    d.className = m.type === "error" ? "msg-err" : m.type === "ok" ? "msg-ok" : "msg-warn";
-    d.textContent = m.text;
-    box.appendChild(d);
+  if (messageTimer) {
+    clearTimeout(messageTimer);
+    messageTimer = null;
   }
+  box.innerHTML = "";
+  if (!items || !items.length) {
+    box.hidden = true;
+    return;
+  }
+  box.hidden = false;
+
+  const counts = items.reduce((acc, m) => {
+    const type = m.type === "error" ? "error" : m.type === "ok" ? "ok" : "warn";
+    acc[type] += 1;
+    return acc;
+  }, { ok: 0, warn: 0, error: 0 });
+  const worst = counts.error ? "error" : counts.warn ? "warn" : "ok";
+  const firstOk = items.find((m) => m.type === "ok")?.text || "Ready.";
+  const issueCount = counts.error + counts.warn;
+  const issueText = [
+    counts.error ? `${counts.error} error${counts.error === 1 ? "" : "s"}` : "",
+    counts.warn ? `${counts.warn} warning${counts.warn === 1 ? "" : "s"}` : "",
+  ].filter(Boolean).join(" · ");
+
+  const panel = document.createElement("section");
+  panel.className = `msg-panel ${worst}`;
+  panel.setAttribute("aria-live", worst === "error" ? "assertive" : "polite");
+  panel.innerHTML = `
+    <div class="msg-head">
+      <span class="msg-dot"></span>
+      <div class="msg-title">
+        <strong>${escapeHtml(worst === "ok" ? "Generated" : "Diagnostics")}</strong>
+        <span>${escapeHtml(issueCount ? `${firstOk} ${issueText}.` : firstOk)}</span>
+      </div>
+      ${issueCount ? `<button type="button" class="msg-toggle" aria-expanded="false">Details</button>` : ""}
+      <button type="button" class="msg-close" aria-label="Close diagnostics">x</button>
+    </div>
+    ${issueCount ? `<div class="msg-details" hidden>
+      <ol>${items.filter((m) => m.type !== "ok").map((m) => `<li class="${m.type === "error" ? "is-error" : "is-warn"}">${escapeHtml(m.text)}</li>`).join("")}</ol>
+    </div>` : ""}
+  `;
+  const close = () => { box.hidden = true; box.innerHTML = ""; };
+  panel.querySelector(".msg-close").addEventListener("click", close);
+  const toggle = panel.querySelector(".msg-toggle");
+  const details = panel.querySelector(".msg-details");
+  if (toggle && details) {
+    toggle.addEventListener("click", () => {
+      const open = details.hidden;
+      details.hidden = !open;
+      toggle.setAttribute("aria-expanded", String(open));
+      toggle.textContent = open ? "Hide" : "Details";
+    });
+  }
+  box.appendChild(panel);
+  if (!issueCount) messageTimer = setTimeout(close, 4500);
 }
 
 // ---------- generate ----------
