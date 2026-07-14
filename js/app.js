@@ -106,14 +106,14 @@ function setMessages(items) {
         <span>${escapeHtml(issueCount ? `${firstOk} ${issueText}.` : firstOk)}</span>
       </div>
       ${issueCount ? `<button type="button" class="msg-toggle" aria-expanded="false">Details</button>` : ""}
-      <button type="button" class="msg-close" aria-label="Close diagnostics">x</button>
+      ${issueCount ? "" : `<button type="button" class="msg-close" aria-label="Close message">x</button>`}
     </div>
     ${issueCount ? `<div class="msg-details" hidden>
       <ol>${items.filter((m) => m.type !== "ok").map((m) => `<li class="${m.type === "error" ? "is-error" : "is-warn"}">${escapeHtml(m.text)}</li>`).join("")}</ol>
     </div>` : ""}
   `;
   const close = () => { box.hidden = true; box.innerHTML = ""; };
-  panel.querySelector(".msg-close").addEventListener("click", close);
+  panel.querySelector(".msg-close")?.addEventListener("click", close);
   const toggle = panel.querySelector(".msg-toggle");
   const details = panel.querySelector(".msg-details");
   if (toggle && details) {
