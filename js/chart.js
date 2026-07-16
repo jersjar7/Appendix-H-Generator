@@ -134,7 +134,10 @@ export function renderChart(ctx, W, H, section, optsIn = {}) {
   // plot rect (B/L leave room so axis titles clear the tick values)
   const L = 96, R = 20, T = 16, B = 80;
   const pL = L, pT = T, pW = W - L - R, pH = H - T - B;
-  const sx = (x) => pL + ((x - xmin) / (xmax - xmin)) * pW;
+  const sx = (x) => {
+    const f = o.reverseX ? (xmax - x) / (xmax - xmin) : (x - xmin) / (xmax - xmin);
+    return pL + f * pW;
+  };
   const sy = (y) => pT + ((ymax - y) / (ymax - ymin)) * pH;
 
   // gridlines + ticks

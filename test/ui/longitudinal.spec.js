@@ -32,4 +32,9 @@ test("longitudinal: paste → generate one profile chart with a PNG download", a
   const afterPos = await snap();
   await page.locator('.leg-nudge button[data-d="D"]').click();
   await expect.poll(snap).not.toBe(afterPos);
+
+  // Station direction flips the x-axis and redraws the profile.
+  const beforeReverse = await snap();
+  await page.locator("#longStationDirection").selectOption("reverse");
+  await expect.poll(snap).not.toBe(beforeReverse);
 });

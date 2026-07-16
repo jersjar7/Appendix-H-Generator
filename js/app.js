@@ -187,6 +187,7 @@ function currentInputs() {
       optLegend: $("optLegend").checked,
       loptEarth: $("loptEarth").checked,
       loptWater: $("loptWater").checked,
+      longStationDirection: $("longStationDirection").value,
       styles: state.styles,
       legend: { ...state.legend },
       markerLabels: state.markerLabels,
@@ -452,6 +453,7 @@ function longitudinalOptions() {
     legendOffX: state.legend.offX,
     legendOffY: state.legend.offY,
     stationStart,
+    reverseX: $("longStationDirection").value === "reverse",
     markers: longitudinalMarkers(stationStart),
     markerLabels: state.markerLabels,
     markerOverrides: state.markerOverrides,
@@ -691,6 +693,7 @@ function restart() {
   $("profile").value = "";
   ["optEarth", "optWater", "optThalweg", "optLegend", "loptEarth"].forEach((id) => ($(id).checked = true));
   $("loptWater").checked = false;
+  $("longStationDirection").value = "normal";
   state = { sections: [], canvases: [], order: "asc", styles: { sections: {}, long: {} }, longitudinal: null, view: "sections", legend: { anchor: "right-middle", offX: 0, offY: 0 }, markerLabels: "auto", markerOverrides: {} };
   $("results").innerHTML = "";
   $("longitudinalPaste").value = ""; $("stationStart").value = "";
@@ -762,6 +765,7 @@ function loadRun(run) {
   $("optLegend").checked = o.optLegend !== false;
   $("loptEarth").checked = o.loptEarth !== false;
   $("loptWater").checked = o.loptWater === true;
+  $("longStationDirection").value = o.longStationDirection === "reverse" ? "reverse" : "normal";
   // styles: support the new {sections,long} shape and legacy flat maps
   const s = o.styles && typeof o.styles === "object" ? o.styles : {};
   state.styles = (s.sections || s.long) ? { sections: { ...(s.sections || {}) }, long: { ...(s.long || {}) } } : { sections: { ...s }, long: {} };
@@ -869,5 +873,6 @@ $("download").addEventListener("click", download);
 // cross-section display options redraw the strip; longitudinal options redraw the profile
 ["optEarth", "optWater", "optThalweg", "optLegend"].forEach((id) => $(id).addEventListener("change", redrawAll));
 ["loptEarth", "loptWater"].forEach((id) => $(id).addEventListener("change", () => state.longitudinal && drawLongitudinal()));
+$("longStationDirection").addEventListener("change", () => state.longitudinal && drawLongitudinal());
 $("summary").addEventListener("input", updateAutoCount);
 $("profile").addEventListener("input", updateAutoCount);
