@@ -13,6 +13,7 @@ Reach 1 253     56
 Reach 1 289     54
 Reach 1 343     52
 Reach 1 443     50
+Reach 1 900     48
 `;
 
 test("longitudinal: paste → generate one profile chart with a PNG download", async ({ page }) => {
@@ -51,6 +52,14 @@ test("longitudinal: paste → generate one profile chart with a PNG download", a
 });
 
 test("longitudinal: start station offsets relative marker labels without hiding them", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.__drawnText = [];
+    const originalFillText = CanvasRenderingContext2D.prototype.fillText;
+    CanvasRenderingContext2D.prototype.fillText = function (text, ...args) {
+      window.__drawnText.push(String(text));
+      return originalFillText.call(this, text, ...args);
+    };
+  });
   await openApp(page);
   await page.evaluate(() => {
     document.querySelector("#step2").open = true;
@@ -63,6 +72,8 @@ test("longitudinal: start station offsets relative marker labels without hiding 
   const withoutMarkers = await page.locator(".long-card canvas").evaluate((c) => c.toDataURL());
 
   await page.fill("#summary", SUMMARY_RELATIVE);
+  await page.evaluate(() => (window.__drawnText = []));
   await page.locator("#genLongitudinal").click({ force: true });
   await expect.poll(() => page.locator(".long-card canvas").evaluate((c) => c.toDataURL())).not.toBe(withoutMarkers);
+  await expect.poll(() => page.evaluate(() => window.__drawnText.includes("10+70"))).toBe(true);
 });

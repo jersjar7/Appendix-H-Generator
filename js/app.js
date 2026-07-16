@@ -438,21 +438,28 @@ function longitudinalDistanceRange() {
   return Number.isFinite(lo) && Number.isFinite(hi) ? { lo, hi } : null;
 }
 
-// Markers come from the Summary Table. Some SMS/model workflows store those as
-// true stationing; others store profile distances. If they fit inside the pasted
-// longitudinal distance range, treat them as distances and add stationStart only
-// to the label. Otherwise, treat them as absolute stations and subtract stationStart
-// to place them on the profile.
-function summaryStationsAreProfileDistances(rows, range) {
-  if (!rows.length || !range) return false;
+function countStationsInRange(rows, range, toDist) {
+  if (!rows.length || !range) return 0;
   const pad = Math.max(5, (range.hi - range.lo) * 0.03);
-  return rows.every((r) => r.station >= range.lo - pad && r.station <= range.hi + pad);
+  return rows.filter((r) => {
+    const d = toDist(r.station);
+    return d >= range.lo - pad && d <= range.hi + pad;
+  }).length;
+}
+
+// Markers come from the Summary Table. Some SMS/model workflows store those as
+// true stationing; others store profile distances. Compare both interpretations
+// and use the one that places more labels inside the pasted longitudinal profile.
+function summaryStationsAreProfileDistances(rows, range, stationStart) {
+  const profileCount = countStationsInRange(rows, range, (station) => station);
+  const absoluteCount = countStationsInRange(rows, range, (station) => station - stationStart);
+  return profileCount >= absoluteCount;
 }
 
 // markers from the Summary Table stations (if pasted), mapped to profile distance
 function longitudinalMarkers(stationStart) {
   const { rows } = parseSummary($("summary").value || "");
-  const asProfileDistance = summaryStationsAreProfileDistances(rows, longitudinalDistanceRange());
+  const asProfileDistance = summaryStationsAreProfileDistances(rows, longitudinalDistanceRange(), stationStart);
   return rows
     .map((r) => ({
       dist: asProfileDistance ? r.station : r.station - stationStart,
