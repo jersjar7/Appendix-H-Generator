@@ -429,11 +429,35 @@ function genLongitudinal() {
   renderView();
 }
 
+function longitudinalDistanceRange() {
+  if (!state.longitudinal) return null;
+  let lo = Infinity, hi = -Infinity;
+  for (const s of [state.longitudinal.ground, ...state.longitudinal.surfaces]) {
+    for (const x of s.dist || []) if (Number.isFinite(x)) { lo = Math.min(lo, x); hi = Math.max(hi, x); }
+  }
+  return Number.isFinite(lo) && Number.isFinite(hi) ? { lo, hi } : null;
+}
+
+// Markers come from the Summary Table. Some SMS/model workflows store those as
+// true stationing; others store profile distances. If they fit inside the pasted
+// longitudinal distance range, treat them as distances and add stationStart only
+// to the label. Otherwise, treat them as absolute stations and subtract stationStart
+// to place them on the profile.
+function summaryStationsAreProfileDistances(rows, range) {
+  if (!rows.length || !range) return false;
+  const pad = Math.max(5, (range.hi - range.lo) * 0.03);
+  return rows.every((r) => r.station >= range.lo - pad && r.station <= range.hi + pad);
+}
+
 // markers from the Summary Table stations (if pasted), mapped to profile distance
 function longitudinalMarkers(stationStart) {
   const { rows } = parseSummary($("summary").value || "");
+  const asProfileDistance = summaryStationsAreProfileDistances(rows, longitudinalDistanceRange());
   return rows
-    .map((r) => ({ dist: r.station - stationStart, label: formatStation(r.station) }))
+    .map((r) => ({
+      dist: asProfileDistance ? r.station : r.station - stationStart,
+      label: formatStation(asProfileDistance ? stationStart + r.station : r.station),
+    }))
     .sort((a, b) => a.dist - b.dist);
 }
 

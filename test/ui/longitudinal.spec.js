@@ -3,6 +3,17 @@ import { openApp } from "./helpers.js";
 import { readFileSync } from "node:fs";
 
 const LONG = readFileSync(new URL("../fixtures_longitudinal.txt", import.meta.url), "utf8");
+const SUMMARY_RELATIVE = `
+    Z
+Reach   Station Min
+Reach 1 70      65
+Reach 1 173     60
+Reach 1 219     58
+Reach 1 253     56
+Reach 1 289     54
+Reach 1 343     52
+Reach 1 443     50
+`;
 
 test("longitudinal: paste → generate one profile chart with a PNG download", async ({ page }) => {
   await openApp(page);
@@ -37,4 +48,21 @@ test("longitudinal: paste → generate one profile chart with a PNG download", a
   const beforeReverse = await snap();
   await page.locator("#longStationDirection").selectOption("reverse");
   await expect.poll(snap).not.toBe(beforeReverse);
+});
+
+test("longitudinal: start station offsets relative marker labels without hiding them", async ({ page }) => {
+  await openApp(page);
+  await page.evaluate(() => {
+    document.querySelector("#step2").open = true;
+    document.querySelector("#step4").open = true;
+  });
+  await page.fill("#stationStart", "1000");
+  await page.fill("#longitudinalPaste", LONG);
+  await page.locator("#genLongitudinal").click({ force: true });
+  await expect(page.locator(".long-card canvas")).toHaveCount(1);
+  const withoutMarkers = await page.locator(".long-card canvas").evaluate((c) => c.toDataURL());
+
+  await page.fill("#summary", SUMMARY_RELATIVE);
+  await page.locator("#genLongitudinal").click({ force: true });
+  await expect.poll(() => page.locator(".long-card canvas").evaluate((c) => c.toDataURL())).not.toBe(withoutMarkers);
 });
