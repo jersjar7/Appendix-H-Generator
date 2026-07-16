@@ -40,5 +40,20 @@ const sec5 = buildLongitudinal(fivePairs, { events: ["2-year", "100-year", "500-
 ok(sec5.surfaces.length === 4, "5-column Proposed: 4 water surfaces");
 ok(sec5.surfaces[3].name === "2080 100-year", "extra Proposed flood named from events");
 
+// two ground profiles + four event surfaces (Existing Ground, Proposed Ground, then WSEs)
+const dualGroundPairs = [
+  { dist: [0, 100, 200], val: [44, 58, 66] },
+  { dist: [0, 100, 200], val: [44.5, 49, 64] },
+  { dist: [0, 100, 200], val: [46, 51, 65] },
+  { dist: [0, 100, 200], val: [47, 52, 66] },
+  { dist: [0, 100, 200], val: [48, 53, 67] },
+  { dist: [0, 100, 200], val: [49, 54, 68] },
+];
+const dual = buildLongitudinal(dualGroundPairs, { events: ["2-year", "100-year", "500-year", "2080 100-year"], conditionLabel: "Proposed Conditions" });
+ok(dual.ground.name === "Proposed Ground", "dual-ground Proposed profile uses Proposed Ground as the main ground");
+ok(dual.extraGrounds.length === 1 && dual.extraGrounds[0].name === "Existing Ground", "dual-ground profile keeps Existing Ground as an extra ground line");
+ok(dual.surfaces.length === 4, "dual-ground profile leaves four water surfaces");
+ok(!dual.surfaces.some((s) => /^Event /.test(s.name)), "dual-ground profile does not create an extra generic Event");
+
 console.log(`\nlongitudinal: ${pass} passed, ${fail} failed`);
 if (fail) process.exit(1);

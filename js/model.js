@@ -116,21 +116,42 @@ export function buildSections(pairs, summaryRows, opts) {
 export function buildLongitudinal(pairs, opts = {}) {
   const valid = (a) => a.filter((v) => v != null && Number.isFinite(v));
   if (pairs.length < 2) throw new Error("Need at least a ground line and one water surface.");
-  let gi = 0;
-  for (let i = 1; i < pairs.length; i++) {
-    if (min(valid(pairs[i].val)) < min(valid(pairs[gi].val))) gi = i;
-  }
-  const ground = pairs[gi];
   const events = opts.events && opts.events.length ? opts.events : [];
-  const surfaces = pairs
-    .filter((_, i) => i !== gi)
+  const extraGroundCount = events.length && pairs.length > events.length + 1 ? 2 : 1;
+  let groundPairs, surfacePairs, groundNames, primaryGroundIndex;
+
+  if (extraGroundCount > 1) {
+    groundPairs = pairs.slice(0, extraGroundCount);
+    surfacePairs = pairs.slice(extraGroundCount);
+    groundNames = extraGroundCount === 2
+      ? ["Existing Ground", "Proposed Ground"]
+      : Array.from({ length: extraGroundCount }, (_, i) => `Ground ${i + 1}`);
+    primaryGroundIndex = /existing/i.test(opts.conditionLabel || "") ? 0 : Math.min(1, extraGroundCount - 1);
+  } else {
+    let gi = 0;
+    for (let i = 1; i < pairs.length; i++) {
+      if (min(valid(pairs[i].val)) < min(valid(pairs[gi].val))) gi = i;
+    }
+    groundPairs = [pairs[gi]];
+    surfacePairs = pairs.filter((_, i) => i !== gi);
+    const groundWord = (opts.conditionLabel || "").replace(/\s*conditions?\s*/i, " ").trim();
+    groundNames = [(groundWord ? groundWord + " " : "") + "Ground"];
+    primaryGroundIndex = 0;
+  }
+
+  const labelledGrounds = groundPairs.map((g, i) => ({ name: groundNames[i] || `Ground ${i + 1}`, dist: g.dist, val: g.val }));
+  const ground = labelledGrounds[primaryGroundIndex];
+  const extraGrounds = labelledGrounds
+    .filter((_, i) => i !== primaryGroundIndex)
+    .map((g, i) => ({ ...g, styleKey: `__ground_extra_${i}__` }));
+
+  const surfaces = surfacePairs
     .map((d) => ({ d, key: mean(valid(d.val)) }))
     .sort((a, b) => a.key - b.key)
     .map((s, i) => ({ name: events[i] || `Event ${i + 1}`, dist: s.d.dist, val: s.d.val }));
-  const groundWord = (opts.conditionLabel || "").replace(/\s*conditions?\s*/i, " ").trim();
-  const groundLabel = (groundWord ? groundWord + " " : "") + "Ground";
   return {
-    ground: { name: groundLabel, dist: ground.dist, val: ground.val },
+    ground,
+    extraGrounds,
     groundMin: min(valid(ground.val)),
     surfaces,
     longitudinal: true,

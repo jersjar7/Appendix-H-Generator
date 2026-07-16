@@ -101,11 +101,19 @@ export function renderChart(ctx, W, H, section, optsIn = {}) {
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, W, H);
 
+  const extraGrounds = (section.extraGrounds || []).map((g, i) => ({
+    name: g.name,
+    dist: g.dist,
+    val: g.val,
+    ground: true,
+    ...applyStyle({ color: "#8a8f98", dash: LINE_STYLES.dashed, width: DEFAULT_WIDTHS.ground }, o.styles && o.styles[g.styleKey || `__ground_extra_${i}__`]),
+  }));
   const series = [
     {
       name: section.ground.name, dist: section.ground.dist, val: section.ground.val, ground: true,
       ...applyStyle({ color: o.groundColor, dash: null, width: DEFAULT_WIDTHS.ground }, o.styles && o.styles.__ground__),
     },
+    ...extraGrounds,
     ...section.surfaces.map((s, i) => ({
       name: s.name,
       dist: s.dist,

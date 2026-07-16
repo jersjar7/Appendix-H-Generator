@@ -1,6 +1,6 @@
 import { parseProfile, parseSummary, formatStation } from "./parse.js";
 import { buildSections, buildLongitudinal } from "./model.js";
-import { renderChart, surfaceColor, DEFAULTS, DEFAULT_WIDTHS } from "./chart.js?v=20260716-x-axis-padding";
+import { renderChart, surfaceColor, DEFAULTS, DEFAULT_WIDTHS } from "./chart.js?v=20260716-dual-ground";
 import { buildDocx } from "./docx.js";
 import { isAvailable as historyAvailable, listRuns, saveRun, deleteRun, clearRuns } from "./history.js";
 import { buildRunReport, reportFilename } from "./report.js";
@@ -424,7 +424,8 @@ function genLongitudinal() {
   state.longitudinal = sec;
   state.view = "long";
   const msgs = warnings.map((w) => ({ type: "warn", text: w }));
-  msgs.unshift({ type: "ok", text: `Longitudinal profile: ground + ${sec.surfaces.length} water surface${sec.surfaces.length === 1 ? "" : "s"} along the reach.` });
+  const groundCount = 1 + (sec.extraGrounds ? sec.extraGrounds.length : 0);
+  msgs.unshift({ type: "ok", text: `Longitudinal profile: ${groundCount} ground profile${groundCount === 1 ? "" : "s"} + ${sec.surfaces.length} water surface${sec.surfaces.length === 1 ? "" : "s"} along the reach.` });
   setMessages(msgs);
   renderView();
 }
@@ -432,7 +433,7 @@ function genLongitudinal() {
 function longitudinalDistanceRange() {
   if (!state.longitudinal) return null;
   let lo = Infinity, hi = -Infinity;
-  for (const s of [state.longitudinal.ground, ...state.longitudinal.surfaces]) {
+  for (const s of [state.longitudinal.ground, ...(state.longitudinal.extraGrounds || []), ...state.longitudinal.surfaces]) {
     for (const x of s.dist || []) if (Number.isFinite(x)) { lo = Math.min(lo, x); hi = Math.max(hi, x); }
   }
   return Number.isFinite(lo) && Number.isFinite(hi) ? { lo, hi } : null;
@@ -595,6 +596,11 @@ function lineDescriptors(view) {
   const sample = view === "long" ? state.longitudinal : state.sections[0];
   if (!sample) return [];
   const out = [{ key: "__ground__", label: sample.ground.name || "Ground", defColor: DEFAULTS.groundColor, defStyle: "solid", defWidth: DEFAULT_WIDTHS.ground }];
+  if (view === "long") {
+    (sample.extraGrounds || []).forEach((g, i) => {
+      out.push({ key: g.styleKey || `__ground_extra_${i}__`, label: g.name || `Ground ${i + 2}`, defColor: "#8a8f98", defStyle: "dashed", defWidth: DEFAULT_WIDTHS.ground });
+    });
+  }
   const n = sample.surfaces.length;
   sample.surfaces.forEach((s, i) => {
     const def = surfaceColor(s.name, i, n);
