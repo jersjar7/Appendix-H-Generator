@@ -1,6 +1,6 @@
 import { parseProfile, parseSummary, formatStation } from "./parse.js";
 import { buildSections, buildLongitudinal } from "./model.js";
-import { renderChart, surfaceColor, DEFAULTS, DEFAULT_WIDTHS } from "./chart.js?v=20260716-axis-margin";
+import { renderChart, surfaceColor, DEFAULTS, DEFAULT_WIDTHS } from "./chart.js?v=20260716-x-axis-padding";
 import { buildDocx } from "./docx.js";
 import { isAvailable as historyAvailable, listRuns, saveRun, deleteRun, clearRuns } from "./history.js";
 import { buildRunReport, reportFilename } from "./report.js";
@@ -483,6 +483,7 @@ function longitudinalOptions() {
     legendAnchor: state.legend.anchor,
     legendOffX: state.legend.offX,
     legendOffY: state.legend.offY,
+    xPaddingFrac: 0.02,
     stationStart,
     reverseX: $("longStationDirection").value === "reverse",
     markers: longitudinalMarkers(stationStart),

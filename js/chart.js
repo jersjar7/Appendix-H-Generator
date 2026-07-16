@@ -128,6 +128,10 @@ export function renderChart(ctx, W, H, section, optsIn = {}) {
     ymin = Math.min(ymin, st.bottom); ymax = Math.max(ymax, st.top);
     xmin = Math.min(xmin, st.x - halfW); xmax = Math.max(xmax, st.x + halfW);
   }
+  if (o.xPaddingFrac && xmax > xmin) {
+    const xPad = (xmax - xmin) * o.xPaddingFrac;
+    xmin -= xPad; xmax += xPad;
+  }
   if (section.yOverride) { ymin = section.yOverride.min; ymax = section.yOverride.max; }
   else { const pad = (ymax - ymin) * 0.08 + 0.4; ymin -= pad; ymax += pad * 1.3; }
 
