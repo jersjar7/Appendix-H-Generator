@@ -3,6 +3,14 @@ import { openApp } from "./helpers.js";
 import { readFileSync } from "node:fs";
 
 const LONG = readFileSync(new URL("../fixtures_longitudinal.txt", import.meta.url), "utf8");
+const LONG_EDGE = `Distance\tValue\tDistance\tValue\tDistance\tValue\tDistance\tValue
+1\t0\t45\t0\t46\t0\t47\t0\t48
+2\t100\t46\t100\t47\t100\t48\t100\t49
+3\t200\t47\t200\t48\t200\t49\t200\t50
+4\t300\t48\t300\t49\t300\t50\t300\t51
+5\t400\t49\t400\t50\t400\t51\t400\t52
+6\t500\t50\t500\t51\t500\t52\t500\t53
+7\t600\t51\t600\t52\t600\t53\t600\t54`;
 const SUMMARY_RELATIVE = `
     Z
 Reach   Station Min
@@ -76,4 +84,31 @@ test("longitudinal: start station offsets relative marker labels without hiding 
   await page.locator("#genLongitudinal").click({ force: true });
   await expect.poll(() => page.locator(".long-card canvas").evaluate((c) => c.toDataURL())).not.toBe(withoutMarkers);
   await expect.poll(() => page.evaluate(() => window.__drawnText.includes("10+70"))).toBe(true);
+});
+
+test("longitudinal: reversed edge station tick labels stay inside the canvas", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.__drawnStations = [];
+    const originalFillText = CanvasRenderingContext2D.prototype.fillText;
+    CanvasRenderingContext2D.prototype.fillText = function (text, x, y, ...args) {
+      const label = String(text);
+      if (/^\d+\+\d{2}$/.test(label)) {
+        const width = this.measureText(label).width;
+        window.__drawnStations.push({ label, left: x - width / 2, right: x + width / 2, canvasW: this.canvas.width });
+      }
+      return originalFillText.call(this, text, x, y, ...args);
+    };
+  });
+  await openApp(page);
+  await page.evaluate(() => (document.querySelector("#step4").open = true));
+  await page.fill("#stationStart", "1000");
+  await page.fill("#longitudinalPaste", LONG_EDGE);
+  await page.locator("#longStationDirection").selectOption("reverse");
+  await page.evaluate(() => (window.__drawnStations = []));
+  await page.locator("#genLongitudinal").click({ force: true });
+  await expect(page.locator(".long-card canvas")).toHaveCount(1);
+
+  const edgeLabels = await page.evaluate(() => window.__drawnStations.filter((d) => d.label === "10+00" || d.label === "16+00"));
+  expect(edgeLabels.length).toBeGreaterThanOrEqual(2);
+  expect(edgeLabels.every((d) => d.left >= 0 && d.right <= d.canvasW)).toBe(true);
 });

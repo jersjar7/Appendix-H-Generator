@@ -131,8 +131,8 @@ export function renderChart(ctx, W, H, section, optsIn = {}) {
   if (section.yOverride) { ymin = section.yOverride.min; ymax = section.yOverride.max; }
   else { const pad = (ymax - ymin) * 0.08 + 0.4; ymin -= pad; ymax += pad * 1.3; }
 
-  // plot rect (B/L leave room so axis titles clear the tick values)
-  const L = 96, R = 20, T = 16, B = 80;
+  // plot rect (B/L/R leave room so axis titles and edge tick labels stay visible)
+  const L = 96, R = 72, T = 16, B = 80;
   const pL = L, pT = T, pW = W - L - R, pH = H - T - B;
   const sx = (x) => {
     const f = o.reverseX ? (xmax - x) / (xmax - xmin) : (x - xmin) / (xmax - xmin);
@@ -282,7 +282,11 @@ export function renderChart(ctx, W, H, section, optsIn = {}) {
   ctx.textAlign = "center"; ctx.textBaseline = "top";
   // longitudinal profiles label X as stationing (SS+FF) offset by stationStart
   const fmtX = (x) => (o.stationStart != null ? fmtStation(o.stationStart + x) : String(trimNum(x)));
-  for (const x of xt) if (x >= xmin && x <= xmax) ctx.fillText(fmtX(x), sx(x), pT + pH + 6);
+  for (const x of xt) if (x >= xmin && x <= xmax) {
+    const label = fmtX(x), tw = ctx.measureText(label).width, edgePad = 6;
+    const px = Math.max(edgePad + tw / 2, Math.min(sx(x), W - edgePad - tw / 2));
+    ctx.fillText(label, px, pT + pH + 6);
+  }
 
   ctx.fillStyle = "#333"; ctx.font = `${Math.round(fontPx * 1.05)}px Arial, sans-serif`;
   ctx.textAlign = "center"; ctx.textBaseline = "bottom";

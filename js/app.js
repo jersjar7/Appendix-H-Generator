@@ -1,6 +1,6 @@
 import { parseProfile, parseSummary, formatStation } from "./parse.js";
 import { buildSections, buildLongitudinal } from "./model.js";
-import { renderChart, surfaceColor, DEFAULTS, DEFAULT_WIDTHS } from "./chart.js";
+import { renderChart, surfaceColor, DEFAULTS, DEFAULT_WIDTHS } from "./chart.js?v=20260716-axis-margin";
 import { buildDocx } from "./docx.js";
 import { isAvailable as historyAvailable, listRuns, saveRun, deleteRun, clearRuns } from "./history.js";
 import { buildRunReport, reportFilename } from "./report.js";
