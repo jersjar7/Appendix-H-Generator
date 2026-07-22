@@ -237,6 +237,7 @@ button.mini { padding: 2px 8px; font-size: 0.8rem; background: #eef2f7; color: v
 .style-row { display: flex; align-items: center; gap: 7px; }
 .style-row .ls-color { width: 28px; height: 24px; padding: 0; flex: none; }
 .style-row .ls-name { font-size: 0.82rem; min-width: 64px; }
+.style-row .ls-label { width: 136px; min-width: 112px; font-size: 0.8rem; padding: 4px 6px; }
 .style-row .ls-style { font-size: 0.8rem; padding: 4px 6px; }
 .style-row .ls-wlabel { display: inline-flex; align-items: center; gap: 3px; font-size: 0.78rem; color: var(--muted); margin: 0; }
 .style-row .ls-width { width: 56px; font-size: 0.8rem; padding: 4px 6px; }

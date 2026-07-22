@@ -32,6 +32,7 @@ ok(render({}) === base, "empty styles map === default render");
 ok(render({ "43 CFS": { color: "#d23b3b" } }) !== base, "surface color override changes the chart");
 ok(render({ "43 CFS": { style: "dashed" } }) !== base, "surface line-type override changes the chart");
 ok(render({ "43 CFS": { width: 6 } }) !== base, "surface thickness override changes the chart");
+ok(render({ "43 CFS": { label: "43 cfs adjusted" } }) !== base, "surface legend-name override changes the chart");
 ok(render({ __ground__: { color: "#0000ff" } }) !== base, "ground color override changes the chart");
 ok(render({ __ground__: { width: 6 } }) !== base, "ground thickness override changes the chart");
 ok(render({ __culvert__: { color: "#cc00cc" } }) !== base, "culvert color override changes the chart");

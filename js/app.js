@@ -1,6 +1,6 @@
 import { parseProfile, parseSummary, formatStation } from "./parse.js";
 import { buildSections, buildLongitudinal } from "./model.js";
-import { renderChart, surfaceColor, DEFAULTS, DEFAULT_WIDTHS } from "./chart.js?v=20260716-dual-ground";
+import { renderChart, surfaceColor, DEFAULTS, DEFAULT_WIDTHS } from "./chart.js?v=20260722-long-labels";
 import { buildDocx } from "./docx.js";
 import { isAvailable as historyAvailable, listRuns, saveRun, deleteRun, clearRuns } from "./history.js";
 import { buildRunReport, reportFilename } from "./report.js";
@@ -622,19 +622,23 @@ function buildStylePanel(view) {
     const color = rgbToHex(cur.color || ln.defColor);
     const style = cur.style || ln.defStyle;
     const width = cur.width != null ? cur.width : ln.defWidth;
+    const labelInput = view === "long"
+      ? `<input type="text" class="ls-label" value="${escapeAttr(cur.label || ln.label)}" placeholder="${escapeAttr(ln.label)}" title="Legend name" />`
+      : `<span class="ls-name">${escapeHtml(ln.label)}</span>`;
     return `<div class="style-row" data-key="${escapeAttr(ln.key)}">
       <input type="color" class="ls-color" value="${color}" title="Line color" />
-      <span class="ls-name">${escapeHtml(ln.label)}</span>
+      ${labelInput}
       <select class="ls-style" title="Line type">
         ${STYLE_OPTIONS.map(([k, label]) => `<option value="${k}"${k === style ? " selected" : ""}>${label}</option>`).join("")}
       </select>
       <label class="ls-wlabel">w<input type="number" class="ls-width" min="0.5" max="8" step="0.5" value="${width}" title="Line thickness" /></label>
     </div>`;
   }).join("");
-  wrap.innerHTML = `<summary>Per-line color, type &amp; thickness</summary><div class="style-rows">${rows}</div>`;
+  wrap.innerHTML = `<summary>${view === "long" ? "Per-line legend name, color, type &amp; thickness" : "Per-line color, type &amp; thickness"}</summary><div class="style-rows">${rows}</div>`;
   wrap.open = true;
   wrap.querySelectorAll(".style-row").forEach((row) => {
     const key = row.dataset.key;
+    row.querySelector(".ls-label")?.addEventListener("input", (e) => setStyle(view, key, { label: e.target.value }));
     row.querySelector(".ls-color").addEventListener("input", (e) => setStyle(view, key, { color: e.target.value }));
     row.querySelector(".ls-style").addEventListener("change", (e) => setStyle(view, key, { style: e.target.value }));
     row.querySelector(".ls-width").addEventListener("input", (e) => {
@@ -646,6 +650,7 @@ function buildStylePanel(view) {
 }
 function setStyle(view, key, patch) {
   state.styles[view][key] = { ...(state.styles[view][key] || {}), ...patch };
+  if ("label" in patch && !String(patch.label || "").trim()) delete state.styles[view][key].label;
   if (view === "long") drawLongitudinal(); else redrawAll();
 }
 // (re)populate a figure group's line-style host from its built data

@@ -56,6 +56,7 @@ export const lineWidthPx = (W, weight) => Math.max(0.4, (weight * W) / REF_W);
 // Apply a user override { color?, style?, width? } on top of a line's defaults.
 function applyStyle(base, ov) {
   return {
+    name: (ov && typeof ov.label === "string" && ov.label.trim()) || base.name,
     color: (ov && ov.color) || base.color,
     dash: ov && ov.style ? (LINE_STYLES[ov.style] || base.dash) : base.dash,
     width: ov && ov.width != null ? ov.width : base.width,
@@ -102,23 +103,21 @@ export function renderChart(ctx, W, H, section, optsIn = {}) {
   ctx.fillRect(0, 0, W, H);
 
   const extraGrounds = (section.extraGrounds || []).map((g, i) => ({
-    name: g.name,
     dist: g.dist,
     val: g.val,
     ground: true,
-    ...applyStyle({ color: "#8a8f98", dash: LINE_STYLES.dashed, width: DEFAULT_WIDTHS.ground }, o.styles && o.styles[g.styleKey || `__ground_extra_${i}__`]),
+    ...applyStyle({ name: g.name, color: "#8a8f98", dash: LINE_STYLES.dashed, width: DEFAULT_WIDTHS.ground }, o.styles && o.styles[g.styleKey || `__ground_extra_${i}__`]),
   }));
   const series = [
     {
-      name: section.ground.name, dist: section.ground.dist, val: section.ground.val, ground: true,
-      ...applyStyle({ color: o.groundColor, dash: null, width: DEFAULT_WIDTHS.ground }, o.styles && o.styles.__ground__),
+      dist: section.ground.dist, val: section.ground.val, ground: true,
+      ...applyStyle({ name: section.ground.name, color: o.groundColor, dash: null, width: DEFAULT_WIDTHS.ground }, o.styles && o.styles.__ground__),
     },
     ...extraGrounds,
     ...section.surfaces.map((s, i) => ({
-      name: s.name,
       dist: s.dist,
       val: s.val,
-      ...applyStyle({ ...surfaceColor(s.name, i, section.surfaces.length), width: DEFAULT_WIDTHS.surface }, o.styles && o.styles[s.name]),
+      ...applyStyle({ name: s.name, ...surfaceColor(s.name, i, section.surfaces.length), width: DEFAULT_WIDTHS.surface }, o.styles && o.styles[s.name]),
     })),
   ];
 
